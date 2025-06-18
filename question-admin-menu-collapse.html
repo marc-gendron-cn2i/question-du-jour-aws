@@ -273,6 +273,23 @@
   background: rgba(0, 0, 0, 0.05);
 }
 
+.menu-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  color: #333;
+  text-decoration: none;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.menu-link:hover {
+  background: rgba(0,0,0,0.05);
+  color: #D51D2C;
+}
+.menu-link i {
+  font-size: 1.25rem;
+  color: #D51D2C;
+}
 
 </style>
 
@@ -289,7 +306,7 @@
       <div class="menu-section">
         <div class="menu-group">
           <button class="menu-toggle">
-            <i class="fa-solid fa-square-poll-horizontal"></i>
+            <i class="fa-solid fa-chart-simple"></i>
             <span class="label">La question du jour</span>
             <i class="fa-solid fa-chevron-down toggle-icon"></i>
           </button>
@@ -299,6 +316,14 @@
             <a href="/classement.html">Classement des répondants</a>
           </div>
         </div>
+        <div class="menu-group">
+        <button class="menu-toggle" data-url="/page/generateur-bouton.html">
+        <i class="fa-solid fa-arrow-pointer"></i>
+        <span class="label">Générateur de bouton</span>
+        <!-- pas besoin de chevron ici si pas de sous-menu -->
+        </button>
+</div>
+
       </div>
      
   <div class="sidebar-footer">
