@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Générateur de bouton Shorthand</title>
+
+  <!-- Polices et icônes -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&family=Crimson+Pro:wght@400;700&display=swap"
+    rel="stylesheet">
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    rel="stylesheet">
+
+  <style>
+    /* ——— Reset & Global ——— */
+    html, body { height:100%; margin:0; padding:0; }
+    body { font-family:'Red Hat Display',sans-serif; background:#f8f8f8; }
+
+    /* ——— Layout général ——— */
+    .layout { display:flex; min-height:100vh; }
+
+    /* ——— Sidebar ——— */
+    .sidebar {
+      width:250px; background:#f8f8f8; border-right:1px solid #ddd;
+      box-shadow:2px 0 5px rgba(0,0,0,0.1);
+      display:flex; flex-direction:column;
+      transition:width .3s ease;
+    }
+    .sidebar.collapsed { width:60px; }
+
+    .sidebar-header {
+      display:flex; align-items:center; padding:1rem;
+      text-decoration:none; color:inherit; cursor:pointer;
+    }
+    .sidebar-header:hover { background:rgba(0,0,0,0.05); }
+    .logo-icon { font-size:1.5rem; color:#D51D2C; }
+    .sidebar-title { font-weight:bold; margin-left:.5rem; color:#333; }
+
+    .menu-section { flex:1; padding-top:1rem; }
+    .menu-group { padding:0 1rem; }
+
+    .menu-toggle {
+      width:100%; background:none; border:none;
+      display:flex; align-items:center;
+      padding:.75rem 1rem; font-size:1rem; color:#333;
+      cursor:pointer; gap:.75rem; transition:background .2s;
+      justify-content:flex-start;
+    }
+    .menu-toggle > i:first-child { font-size:1.25rem; color:#D51D2C; }
+    .menu-toggle:hover { background:rgba(0,0,0,0.05); }
+    .menu-toggle .label { flex:1; text-align:left; }
+    .menu-toggle .toggle-icon { margin-left:auto; font-size:1rem; color:#333; }
+
+    .submenu {
+      overflow:hidden; max-height:0; opacity:0;
+      transition:max-height .3s ease, opacity .3s ease;
+      padding-left:1.5rem;
+    }
+    .submenu a {
+      display:block; padding:.5rem 1rem;
+      font-size:.95rem; color:#333; text-decoration:none;
+      transition:background .2s, color .2s;
+    }
+    .submenu a:hover { background:rgba(0,0,0,0.05); color:#D51D2C; }
+
+    .sidebar-footer {
+      margin-top:auto; padding:1rem;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .footer-logo { max-height:32px; width:auto; }
+    .sidebar-toggle-btn {
+      background:#fff; color:#D51D2C; border:1px solid #ccd3d8;
+      border-radius:50%; width:36px; height:36px;
+      display:flex; align-items:center; justify-content:center;
+      cursor:pointer; transition:background .2s, color .2s;
+    }
+    .sidebar-toggle-btn:hover { background:#C21A26; }
+    .sidebar-toggle-btn:hover i { color:#fff; }
+
+    /* ouverture / collapse */
+    .sidebar:not(.collapsed) .submenu { max-height:500px; opacity:1; }
+    .sidebar.collapsed .label,
+    .sidebar.collapsed .sidebar-title,
+    .sidebar.collapsed .menu-toggle .toggle-icon {
+      display:none !important;
+    }
+    .sidebar.collapsed .sidebar-header,
+    .sidebar.collapsed .menu-toggle {
+      justify-content:center;
+    }
+    .sidebar.collapsed .logo-icon,
+    .sidebar.collapsed .menu-toggle > i {
+      font-size:1.5rem; margin:0; min-width:auto;
+    }
+    .sidebar.collapsed .footer-logo { display:none !important; }
+
+    /* ——— Contenu principal ——— */
+    .content { flex:1; padding:2rem; background:#f8f8f8; overflow:auto; }
+    .container {
+      width:100%; max-width:800px; margin:0 auto;
+      /* plus de fond blanc ici : */
+      background:transparent !important;
+      box-shadow:none !important;
+      border-radius:0 !important;
+      padding:1rem 2rem 2rem;
+    }
+
+    /* ——— Styles Générateur ——— */
+    :root {
+      --primary: #D51D2C;
+      --bg-light: #eee;
+      --border: #ccc;
+    }
+    h1 {
+      text-align:center; color:var(--primary);
+      margin-bottom:2rem; font-size:1.75rem;
+    }
+    label {
+      display:block; font-weight:700;
+      margin-top:1.5rem;
+    }
+    input, select, .editable {
+      width:100%; padding:.5rem; font-size:1rem;
+      border:1px solid var(--border);
+      border-radius:6px; box-sizing:border-box;
+    }
+    input[type="checkbox"] { width:auto; }
+    input[type="color"] {
+      width:2rem; height:2rem;
+      border:1px solid var(--border);
+      border-radius:4px; cursor:pointer; padding:0;
+    }
+    .editable {
+      min-height:3rem; position:relative;
+      background:#ffffff;
+    }
+    .editable[placeholder]:empty:before {
+      content:attr(placeholder); color:#888;
+      position:absolute; top:.5rem; left:.5rem;
+    }
+    .format-buttons { margin-top:.5rem; }
+    .format-buttons button {
+      width:2.5rem; height:2.5rem; margin-right:.5rem;
+      border:1px solid var(--border); border-radius:4px;
+      background:#fff; cursor:pointer; display:inline-flex;
+      align-items:center; justify-content:center;
+    }
+    .color-row, .advanced-row {
+      display:flex; gap:1rem; margin-top:1rem;
+    }
+    .color-input {
+      flex:1; display:flex; align-items:center; gap:.5rem;
+    }
+    #advancedOptionsToggle {
+      display:block; margin:1rem 0; background:none;
+      color:var(--primary); border:none;
+      text-decoration:underline; cursor:pointer;
+    }
+    #advancedOptions {
+      display:none; background:var(--bg-light);
+      padding:1rem; border-radius:6px; margin-bottom:1rem;
+    }
+    .generate, .copy {
+      margin-top:1rem; padding:.75rem 1.5rem;
+      background:var(--primary); color:#fff;
+      border:none; border-radius:6px;
+      cursor:pointer; font-family:inherit;
+    }
+    .generate:hover, .copy:hover { background:#a71a26; }
+    iframe {
+      width:100%; border:1px solid var(--border);
+      border-radius:6px; margin:2rem 0;
+    }
+    textarea {
+      width:100%; height:250px; font-family:monospace;
+      margin-top:1rem;
+    }
+    .warning {
+      padding:1rem; color:#b00; font-weight:700;
+      text-align:center;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <a href="/menu-outils.html" class="sidebar-header">
+        <i class="fa-solid fa-star-of-life logo-icon"></i>
+        <span class="sidebar-title">Outils numériques</span>
+      </a>
+      <div class="menu-section">
+        <div class="menu-group">
+          <button class="menu-toggle">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span class="label">La question du jour</span>
+            <i class="fa-solid fa-chevron-down toggle-icon"></i>
+          </button>
+          <div class="submenu">
+            <a href="/question-admin.html">Créer / mettre à jour</a>
+            <a href="/analytics.html">Résultats</a>
+            <a href="/classement.html">Classement</a>
+          </div>
+        </div>
+        <div class="menu-group">
+          <button class="menu-toggle" data-url="/page/generateur-bouton.html">
+            <i class="fa-solid fa-arrow-pointer"></i>
+            <span class="label">Générateur de bouton</span>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <img src="https://cloudfront-us-east-1.images.arcpublishing.com/lescoopsdelinformation/H3YSM5YWJZGQTL2NZAGXWXNEGQ.png"
+             alt="Les Coops de l'information" class="footer-logo">
+        <button id="sidebarToggle" class="sidebar-toggle-btn">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Contenu principal -->
+    <main class="content">
+      <div class="container">
+        <h1>Générateur de bouton Shorthand</h1>
+        <div>
+          <label><input type="checkbox" id="withBackground"> Utiliser une image de fond</label>
+          <label for="url">Lien URL du bouton</label>
+          <input type="url" id="url" placeholder="https://...">
+
+          <label>Texte du bouton</label>
+          <div id="text" class="editable" contenteditable placeholder="Découvrir le reportage">
+            Découvrir le reportage
+          </div>
+          <div class="format-buttons">
+            <button data-cmd="bold"><b>G</b></button>
+            <button data-cmd="italic"><i>I</i></button>
+            <button data-cmd="underline"><u>S</u></button>
+          </div>
+
+          <div class="color-row">
+            <div class="color-input">
+              <label>Couleur du bouton</label>
+              <input type="color" id="btnColorPicker" value="#D51D2C">
+              <input type="text" id="btnColor" value="#D51D2C">
+            </div>
+            <div class="color-input">
+              <label>Couleur du texte</label>
+              <input type="color" id="textColorPicker" value="#ffffff">
+              <input type="text" id="textColor" value="#ffffff">
+            </div>
+          </div>
+
+          <div id="bgFields" style="display:none;">
+            <label for="bgImage">Lien de l'image de fond</label>
+            <input type="url" id="bgImage" placeholder="https://...">
+            <label>Titre au-dessus du bouton</label>
+            <div id="overlayTitle" class="editable" contenteditable placeholder="Titre du bloc (facultatif)"></div>
+            <div class="format-buttons">
+              <button data-cmd="bold" data-target="overlayTitle"><b>G</b></button>
+              <button data-cmd="italic" data-target="overlayTitle"><i>I</i></button>
+              <button data-cmd="underline" data-target="overlayTitle"><u>S</u></button>
+            </div>
+          </div>
+
+          <button id="advancedOptionsToggle">Afficher les options avancées</button>
+          <div id="advancedOptions">
+            <label>Flou (%)</label><input type="number" id="blurPercent" value="0" min="0" max="100">
+            <label>Hauteur du bloc</label><input type="text" id="blockHeight" value="250px">
+            <label>Effet au survol du bouton</label>
+            <div class="advanced-row">
+              <label><input type="radio" name="hoverEffect" value="darken" checked> Foncer</label>
+              <label><input type="radio" name="hoverEffect" value="lighten"> Éclaircir</label>
+            </div>
+            <div class="color-row">
+              <div class="color-input"><label>Largeur du bouton</label><input type="text" id="buttonWidth" value="250px"></div>
+              <div class="color-input"><label>Hauteur du bouton</label><input type="text" id="buttonHeight" value="55px"></div>
+            </div>
+            <label>Border-radius</label><input type="text" id="borderRadius" value="4px">
+            <label>Taille texte bouton</label><input type="text" id="buttonFontSize" value="20px">
+            <label>Taille titre</label><input type="text" id="titleFontSize" value="30px">
+            <div class="color-row">
+              <div class="color-input">
+                <label>Police titre</label>
+                <select id="titleFontFamily">
+                  <option value="'Red Hat Display',sans-serif">Red Hat Display</option>
+                  <option value="'Crimson Pro',serif">Crimson Pro</option>
+                </select>
+              </div>
+              <div class="color-input">
+                <label>Couleur titre</label>
+                <input type="color" id="titleColorPicker" value="#000000">
+                <input type="text" id="titleColor" value="#000000">
+              </div>
+            </div>
+            <label>Espacement titre-bouton</label><input type="text" id="titleSpacing" value="20px">
+          </div>
+
+          <button class="generate">Générer le code</button>
+
+        </div>
+
+        <label>Prévisualisation du bouton :</label>
+        <iframe id="previewFrame" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>
+        <button class="copy">Copier le code</button>
+        <label>Code HTML</label>
+        <textarea id="codeOutput" readonly></textarea>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    // ——— Sidebar Logic ———
+    const sidebar   = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const ic = toggleBtn.querySelector('i');
+      ic.classList.toggle('fa-chevron-right');
+      ic.classList.toggle('fa-chevron-left');
+      if (sidebar.classList.contains('collapsed')) {
+        document.querySelectorAll('.submenu').forEach(sub => sub.style.display = 'none');
+      }
+    });
+    document.querySelectorAll('.menu-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.url;
+        if (url) {
+          if (window.location.pathname !== url) window.location.href = url;
+          return;
+        }
+        const sub = btn.nextElementSibling;
+        sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+        const ic = btn.querySelector('.toggle-icon');
+        ic.classList.toggle('fa-chevron-up');
+        ic.classList.toggle('fa-chevron-down');
+      });
+    });
+
+    // ——— Générateur Logic ———
+    document.addEventListener('DOMContentLoaded', function() {
+      // synchronisation des couleurs
+      [['btnColorPicker','btnColor'],['textColorPicker','textColor'],['titleColorPicker','titleColor']]
+        .forEach(([cp,tf])=>{
+          const c=document.getElementById(cp), t=document.getElementById(tf);
+          c.addEventListener('input',()=>t.value=c.value);
+          t.addEventListener('input',()=>c.value=t.value);
+        });
+      // toggle fond
+      document.getElementById('withBackground').addEventListener('change',function(){
+        document.getElementById('bgFields').style.display=this.checked?'block':'none';
+      });
+      // formatage
+      document.querySelectorAll('.format-buttons button').forEach(btn=>{
+        btn.addEventListener('click',function(){
+          const tgt=this.dataset.target||'text';
+          document.getElementById(tgt).focus();
+          document.execCommand(this.dataset.cmd,false,null);
+        });
+      });
+      // options avancées
+      document.getElementById('advancedOptionsToggle').addEventListener('click',function(){
+        const p=document.getElementById('advancedOptions'),
+              show=p.style.display!=='block';
+        p.style.display=show?'block':'none';
+        this.textContent= show?'Cacher les options avancées':'Afficher les options avancées';
+      });
+
+      // génération
+      document.querySelector('.generate').addEventListener('click',function(){
+        const url = document.getElementById('url').value.trim();
+        if (!url) {
+          document.getElementById('previewFrame').srcdoc = '<div class="warning">⚠️ Entrer une URL.</div>';
+          return;
+        }
+
+        const uid = Date.now(),
+              v   = id => document.getElementById(id).value,
+              w   = document.getElementById('withBackground').checked,
+              txt = document.getElementById('text').innerHTML,
+              btncol = v('btnColor'), txtcol = v('textColor'),
+              bg = v('bgImage'),
+              ttl = document.getElementById('overlayTitle').innerHTML,
+              ts  = v('titleSpacing'), tfs = v('titleFontSize'),
+              tff = v('titleFontFamily'), tcol = v('titleColor'),
+              bl  = v('blurPercent'), blockH = v('blockHeight'),
+              br  = v('borderRadius'), fs = v('buttonFontSize'),
+              effect = document.querySelector('input[name="hoverEffect"]:checked').value,
+              hoverCss = effect === 'darken'
+                ? 'filter:brightness(85%);'
+                : 'filter:brightness(115%);';
+
+        // Hauteur minimale
+        let btnW = v('buttonWidth'), btnH = v('buttonHeight'),
+            minH = parseInt(fs) + (w ? 16 : 32);
+        if (parseInt(btnH) < minH) {
+          btnH = minH + 'px';
+          document.getElementById('buttonHeight').value = btnH;
+        }
+
+        // HTML complet pour preview
+        const titleHTML = ttl
+          ? `<div style="margin-bottom:${ts};font-size:${tfs};font-family:${tff};color:${tcol}">${ttl}</div>`
+          : '';
+        const html = w
+          ? `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  @import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&family=Crimson+Pro:wght@400;700&display=swap');
+  #wr${uid}{
+    position:relative;width:100%;height:${blockH};
+    display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    padding:0 16px;box-sizing:border-box;
+  }
+  #wr${uid}::before{
+    content:'';position:absolute;top:0;left:0;
+    width:100%;height:100%;
+    background:url('${bg}') center/cover no-repeat;
+    filter:blur(${bl}px);
+  }
+  #wr${uid} > *{position:relative;z-index:1;}
+  #wr${uid} a{text-decoration:none;}
+  #btn${uid}{
+    background:${btncol};color:${txtcol};
+    padding:8px 35px;font-size:${fs};
+    border:none;border-radius:${br};
+    width:${btnW};height:${btnH};
+    display:flex;align-items:center;justify-content:center;
+    white-space:nowrap;cursor:pointer;
+    transition:filter .4s;
+  }
+  #btn${uid}:hover{${hoverCss}}
+</style></head><body>
+  <div id="wr${uid}">
+    ${titleHTML}
+    <a href="${url}" target="_blank"><button id="btn${uid}">${txt}</button></a>
+  </div>
+</body></html>`
+          : `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><style>
+  html,body{margin:0;padding:0;height:100%;overflow:hidden;}
+  @import url('https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&display=swap');
+  body{display:flex;justify-content:center;align-items:center;font-family:'Red Hat Display',sans-serif;}
+  #btn${uid}{
+    background:${btncol};color:${txtcol};
+    padding:16px;font-size:${fs};
+    border:none;border-radius:${br};
+    width:${btnW};height:${btnH};
+    display:flex;align-items:center;justify-content:center;
+    white-space:nowrap;cursor:pointer;
+    transition:filter .4s;
+  }
+  #btn${uid}:hover{${hoverCss}}
+</style></head><body>
+  <button id="btn${uid}" onclick="window.open('${url}','_blank')">${txt}</button>
+</body></html>`;
+
+        // Afficher en preview
+        const frame = document.getElementById('previewFrame');
+        frame.srcdoc = html;
+        frame.style.height = blockH;
+
+        // Code d'intégration via Shadow DOM
+        const shadowCss = `
+          :host{display:block;width:100%;}
+          .wrapper{
+            position:relative;display:flex;
+            justify-content:center;align-items:center;
+            height:${blockH};
+          }
+          .wrapper::before{
+            content:'';position:absolute;top:0;left:0;
+            width:100%;height:100%;
+            background-image:url('${bg}');
+            background-size:cover;background-position:center;
+            filter:blur(${bl}px);
+          }
+          .wrapper > *{position:relative;z-index:1;}
+          .wrapper a{text-decoration:none;}
+          button{
+            background:${btncol};color:${txtcol};
+            padding:16px;font-size:${fs};
+            border:none;border-radius:${br};
+            cursor:pointer;transition:filter .4s;
+          }
+          button:hover{${hoverCss}}
+        `;
+        const innerHTML = `
+          <div class="wrapper">
+            ${titleHTML}
+            <a href="${url}" target="_blank">
+              <button>${txt}</button>
+            </a>
+          </div>
+        `;
+        const embedCode = `
+          <div id="shorthand-btn-${uid}"></div>
+          <script>
+          (function(){
+            const c = document.getElementById("shorthand-btn-${uid}"),
+                  s = c.attachShadow({mode:"open"}),
+                  style = document.createElement("style");
+            style.textContent = \`${shadowCss}\`;
+            s.appendChild(style);
+            const wrapper = document.createElement("div");
+            wrapper.className = "wrapper";
+            wrapper.innerHTML = \`${innerHTML}\`;
+            s.appendChild(wrapper);
+          })();
+          <\/script>
+        `;
+
+        document.getElementById('codeOutput').value = embedCode.trim();
+      });
+
+      // Copier le code
+      document.querySelector('.copy').addEventListener('click', async () => {
+        const code = document.getElementById('codeOutput').value;
+        try {
+          await navigator.clipboard.writeText(code);
+        } catch {
+          const ta = document.getElementById('codeOutput');
+          ta.select();
+          document.execCommand('copy');
+        }
+        alert('Code copié !');
+      });
+    });
+  </script>
+</body>
+</html>
