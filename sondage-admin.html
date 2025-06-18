@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Créer / Mettre à jour une question</title>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Red Hat Display', sans-serif;
+      background: #f8f8f8;
+      margin: 3rem auto;
+      max-width: 600px;
+      padding: 1rem;
+    }
+    h1 {
+      color: #d51D2C;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    .inline-inputs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .inline-inputs > div {
+      flex: 1;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    #optionsContainer .option-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .drag-handle {
+      cursor: grab;
+      font-size: 1.2rem;
+      color: #888;
+    }
+    .option-row input {
+      flex: 1;
+    }
+    .remove-option {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: #d51D2C;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 1.5rem;
+      background: #d51D2C;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #c21a26;
+    }
+    .message {
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    nav.main-menu {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    nav.main-menu a {
+      display: inline-block;
+      margin: 0 0.5rem;
+      padding: 0.5rem 1rem;
+      color: #d51D2C;
+      text-decoration: none;
+      font-weight: 600;
+      border: 2px solid transparent;
+      border-radius: 6px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    nav.main-menu a:hover,
+    nav.main-menu a:focus {
+      background: #d51D2C;
+      color: #fff;
+      border-color: #d51D2C;
+    }
+  </style>
+</head>
+<body>
+  <nav class="main-menu">
+    <a href="analytics.html">Analytics</a>
+    <a href="classement.html">Classement</a>
+  </nav>
+
+  <h1>Créer / Mettre à jour une question</h1>
+  <form id="pollForm">
+    <label for="site">Site</label>
+    <select id="site" required>
+      <option value="lesoleil">Le Soleil</option>
+      <option value="ledroit">Le Droit</option>
+      <option value="lenouvelliste">Le Nouvelliste</option>
+      <option value="lequotidien">Le Quotidien</option>
+      <option value="latribune">La Tribune</option>
+      <option value="lavoixdelest">La Voix de l'Est</option>
+    </select>
+
+    <div class="inline-inputs">
+      <div>
+        <label for="dateDebut">Date de début</label>
+        <input type="date" id="dateDebut" required>
+      </div>
+      <div>
+        <label for="heureDebut">Heure de début</label>
+        <input type="time" id="heureDebut" required>
+      </div>
+    </div>
+
+    <div class="inline-inputs">
+      <div>
+        <label for="dateFin">Date de fin</label>
+        <input type="date" id="dateFin" required>
+      </div>
+      <div>
+        <label for="heureFin">Heure de fin</label>
+        <input type="time" id="heureFin" required>
+      </div>
+    </div>
+
+    <label for="question">Question</label>
+    <textarea id="question" rows="2" required placeholder="Inscrivez votre question"></textarea>
+
+    <label>Choix de réponse (2 à 8 | recommandé 3–5)</label>
+    <div id="optionsContainer"></div>
+    <button type="button" id="addOption">Ajouter une option</button>
+
+    <button type="submit">Créer / Mettre à jour</button>
+    <div class="message" id="successMessage"></div>
+  </form>
+
+  <!-- SortableJS pour drag & drop -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+   const form             = document.getElementById('pollForm');
+const siteEl           = document.getElementById('site');
+const dateDebutEl      = document.getElementById('dateDebut');
+const heureDebutEl     = document.getElementById('heureDebut');
+const dateFinEl        = document.getElementById('dateFin');
+const heureFinEl       = document.getElementById('heureFin');
+const questionEl       = document.getElementById('question');
+const optionsContainer = document.getElementById('optionsContainer');
+const addOptionBtn     = document.getElementById('addOption');
+const successMessage   = document.getElementById('successMessage');
+
+const overlayHtml = `
+<div id="confirmOverlay" style="
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  background:rgba(0,0,0,0.5);display:flex;align-items:center;
+  justify-content:center;z-index:1000;visibility:hidden;
+">
+  <div style="
+    background:white;padding:1.5rem;border-radius:8px;
+    max-width:90%;text-align:center;
+  ">
+    <p>Ce sondage est encore en cours.<br>
+       Voulez-vous <b>conserver</b> les votes actuels ? (Conserver)  
+       ou <b>réinitialiser</b> les votes ? (Réinitialiser)
+    </p>
+    <button id="confirmKeep" style="margin:0 .5rem;padding:.5rem 1rem;">Conserver</button>
+    <button id="confirmReset" style="margin:0 .5rem;padding:.5rem 1rem;">Réinitialiser</button>
+  </div>
+</div>`;
+document.body.insertAdjacentHTML('beforeend', overlayHtml);
+const overlay = document.getElementById('confirmOverlay');
+const keepBtn = document.getElementById('confirmKeep');
+const resetBtn = document.getElementById('confirmReset');
+function showConfirmModal() {
+  return new Promise(resolve => {
+    overlay.style.visibility = 'visible';
+    keepBtn.onclick = () => { overlay.style.visibility = 'hidden'; resolve(true); };
+    resetBtn.onclick = () => { overlay.style.visibility = 'hidden'; resolve(false); };
+  });
+}
+
+function createOptionElement(value = '') {
+  const wrapper = document.createElement('div');
+  wrapper.className = 'option-row';
+  wrapper.innerHTML = `
+    <span class="drag-handle" title="Réordonner">≡</span>
+    <input type="text" class="option-input" value="${value}" placeholder="Option" required>
+    <button type="button" class="remove-option" title="Supprimer">✕</button>
+  `;
+  const removeBtn = wrapper.querySelector('.remove-option');
+  removeBtn.addEventListener('click', () => {
+    const count = optionsContainer.querySelectorAll('.option-row').length;
+    if (count > 2) {
+      wrapper.remove();
+      refreshRemoveButtons();
+      updateAddOptionButton();
+    }
+  });
+  return wrapper;
+}
+
+function refreshRemoveButtons() {
+  const rows = optionsContainer.querySelectorAll('.option-row');
+  rows.forEach((row, idx) => {
+    const btn = row.querySelector('.remove-option');
+    btn.style.visibility = (idx < 2) ? 'hidden' : 'visible';
+  });
+}
+
+function updateAddOptionButton() {
+  addOptionBtn.disabled = optionsContainer.children.length >= 8;
+}
+
+Sortable.create(optionsContainer, {
+  handle: '.drag-handle',
+  animation: 150
+});
+
+addOptionBtn.addEventListener('click', () => {
+  if (optionsContainer.children.length < 8) {
+    optionsContainer.appendChild(createOptionElement());
+    refreshRemoveButtons();
+    updateAddOptionButton();
+  }
+});
+
+function prepareNewPoll() {
+  optionsContainer.innerHTML = '';
+  optionsContainer.appendChild(createOptionElement());
+  optionsContainer.appendChild(createOptionElement());
+  refreshRemoveButtons();
+  updateAddOptionButton();
+
+  const dDeb = new Date(dateDebutEl.value);
+  const next = new Date(dDeb);
+  next.setDate(next.getDate() + 1);
+  const toISO = d => d.toISOString().split('T')[0];
+  dateFinEl.value    = toISO(next);
+  heureDebutEl.value = '06:00';
+  heureFinEl.value   = '05:59';
+
+  heureDebutEl.disabled = false;
+  dateFinEl.disabled    = false;
+  heureFinEl.disabled   = false;
+  questionEl.disabled   = false;
+  questionEl.value      = '';
+  successMessage.textContent = '';
+}
+
+async function loadExistingPoll() {
+  const site = siteEl.value;
+  const dDeb = dateDebutEl.value;
+  if (!site || !dDeb) return;
+  const pollId = `${site}_${dDeb}`;
+
+  try {
+    const resp = await fetch(
+      `https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll/${pollId}`,
+      { credentials: 'omit' }
+    );
+    if (resp.status === 404) {
+      prepareNewPoll();
+      return;
+    }
+    if (!resp.ok) throw new Error(resp.status);
+    const data = await resp.json();
+
+    heureDebutEl.value = data.startDateTime.slice(11,16);
+    dateFinEl.value    = data.endDateTime.slice(0,10);
+    heureFinEl.value   = data.endDateTime.slice(11,16);
+    questionEl.value   = data.question;
+
+    optionsContainer.innerHTML = '';
+    data.options.forEach(opt =>
+      optionsContainer.appendChild(createOptionElement(opt))
+    );
+    refreshRemoveButtons();
+    updateAddOptionButton();
+
+    const now = new Date();
+    const ended = new Date(data.endDateTime) <= now;
+    heureDebutEl.disabled = ended;
+    dateFinEl.disabled    = ended;
+    heureFinEl.disabled   = ended;
+    questionEl.disabled   = ended;
+    optionsContainer.querySelectorAll('.option-input')
+      .forEach(input => input.disabled = ended);
+    addOptionBtn.disabled = ended;
+
+    successMessage.textContent = '';
+  } catch (err) {
+    console.error('Erreur loadExistingPoll', err);
+    prepareNewPoll();
+  }
+}
+
+form.addEventListener('submit', async ev => {
+  ev.preventDefault();
+
+  const site     = siteEl.value;
+  const dDeb     = dateDebutEl.value;
+  const dFin     = dateFinEl.value;
+  const hDeb     = heureDebutEl.value;
+  const hFin     = heureFinEl.value;
+  const question = questionEl.value.trim();
+  const options  = Array.from(optionsContainer.querySelectorAll('.option-input'))
+                    .map(i => i.value.trim())
+                    .filter(v => v);
+
+  if (options.length < 2) {
+    successMessage.textContent = 'Veuillez fournir au moins deux options.';
+    return;
+  }
+
+  const pollId = `${site}_${dDeb}`;
+  let votes = new Array(options.length).fill(0);
+
+  try {
+    const check = await fetch(
+      `https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll/${pollId}`,
+      { credentials: 'omit' }
+    );
+    if (check.ok) {
+      const existing = await check.json();
+      const now = new Date();
+      const end = new Date(existing.endDateTime);
+      if (now < end && existing.options.length === options.length) {
+        const keep = await showConfirmModal();
+        if (keep) votes = existing.votes;
+      }
+    }
+  } catch (_) {}
+
+  const payload = {
+    pollId,
+    site,
+    question,
+    startDateTime: `${dDeb}T${hDeb}:00Z`,
+    endDateTime:   `${dFin}T${hFin}:00Z`,
+    options,
+    votes
+  };
+
+  try {
+    const resp = await fetch(
+      'https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll',
+      {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        credentials: 'omit',
+        body: JSON.stringify(payload)
+      }
+    );
+    if (!resp.ok) throw new Error(resp.status);
+    successMessage.textContent = 'Sondage créé / mis à jour !';
+    setTimeout(loadExistingPoll, 500);
+  } catch (err) {
+    console.error('Erreur save poll', err);
+    successMessage.textContent = `Erreur : ${err.message}`;
+  }
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const toISO = d => d.toISOString().split('T')[0];
+
+  dateDebutEl.value  = toISO(tomorrow);
+  heureDebutEl.value = '06:00';
+  dateFinEl.value    = toISO(tomorrow);
+  heureFinEl.value   = '05:59';
+
+  prepareNewPoll();
+  loadExistingPoll();
+  dateDebutEl.addEventListener('change', loadExistingPoll);
+});
+
+  </script>
+</body>
+</html>
