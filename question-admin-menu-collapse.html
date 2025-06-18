@@ -178,7 +178,7 @@
 
     /* BOUTON TOGGLE SIDEBAR */
     .sidebar-toggle-btn {
-      background: transparent;
+      background: #D51D2C;
       border: 1px solid #ccd3d8;
       border-radius: 50%;
       width: 36px;
@@ -212,7 +212,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
         <i class="fa-solid fa-star-of-life logo-icon"></i>
-        <span class="sidebar-title">Compositeur</span>
+        <span class="sidebar-title">Outils numériques</span>
       </div>
       <div class="menu-section">
         <div class="menu-group">
@@ -236,7 +236,47 @@
       <div class="container">
         <h1>Créer / Mettre à jour une question</h1>
         <form id="pollForm">
-          <!-- ... ton formulaire ... -->
+          <label for="site">Site</label>
+          <select id="site" required>
+            <option value="lesoleil">Le Soleil</option>
+            <option value="ledroit">Le Droit</option>
+            <option value="lenouvelliste">Le Nouvelliste</option>
+            <option value="lequotidien">Le Quotidien</option>
+            <option value="latribune">La Tribune</option>
+            <option value="lavoixdelest">La Voix de l'Est</option>
+          </select>
+
+          <div class="inline-inputs">
+            <div>
+              <label for="dateDebut">Date de début</label>
+              <input type="date" id="dateDebut" required>
+            </div>
+            <div>
+              <label for="heureDebut">Heure de début</label>
+              <input type="time" id="heureDebut" required>
+            </div>
+          </div>
+
+          <div class="inline-inputs">
+            <div>
+              <label for="dateFin">Date de fin</label>
+              <input type="date" id="dateFin" required>
+            </div>
+            <div>
+              <label for="heureFin">Heure de fin</label>
+              <input type="time" id="heureFin" required>
+            </div>
+          </div>
+
+          <label for="question">Question</label>
+          <textarea id="question" rows="2" required placeholder="Inscrivez votre question"></textarea>
+
+          <label>Choix de réponse (2 à 8 | recommandé 3–5)</label>
+          <div id="optionsContainer"></div>
+          <button type="button" id="addOption">Ajouter une option</button>
+
+          <button type="submit">Créer / Mettre à jour</button>
+          <div class="message" id="successMessage"></div>
         </form>
       </div>
     </main>
@@ -244,7 +284,214 @@
 
   <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
   <script>
-    // ... ton code de sondage, création des options, fetch, etc. ...
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+    const form             = document.getElementById('pollForm');
+    const siteEl           = document.getElementById('site');
+    const dateDebutEl      = document.getElementById('dateDebut');
+    const heureDebutEl     = document.getElementById('heureDebut');
+    const dateFinEl        = document.getElementById('dateFin');
+    const heureFinEl       = document.getElementById('heureFin');
+    const questionEl       = document.getElementById('question');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const addOptionBtn     = document.getElementById('addOption');
+    const successMessage   = document.getElementById('successMessage');
+
+    // Modal de confirmation
+    const overlayHtml = `
+      <div id="confirmOverlay" style="
+        position:fixed;top:0;left:0;width:100%;height:100%;
+        background:rgba(0,0,0,0.5);display:flex;align-items:center;
+        justify-content:center;z-index:1000;visibility:hidden;
+      ">
+        <div style="
+          background:white;padding:1.5rem;border-radius:8px;
+          max-width:90%;text-align:center;
+        ">
+          <p>Ce sondage est encore en cours.<br>
+             Voulez-vous <b>conserver</b> les votes actuels ? ou <b>réinitialiser</b> les votes ?
+          </p>
+          <button id="confirmKeep" style="margin:0 .5rem;padding:.5rem 1rem;">Conserver</button>
+          <button id="confirmReset" style="margin:0 .5rem;padding:.5rem 1rem;">Réinitialiser</button>
+        </div>
+      </div>`;
+    document.body.insertAdjacentHTML('beforeend', overlayHtml);
+    const overlay = document.getElementById('confirmOverlay');
+    const keepBtn = document.getElementById('confirmKeep');
+    const resetBtn = document.getElementById('confirmReset');
+    function showConfirmModal() {
+      return new Promise(resolve => {
+        overlay.style.visibility = 'visible';
+        keepBtn.onclick = () => { overlay.style.visibility = 'hidden'; resolve(true); };
+        resetBtn.onclick = () => { overlay.style.visibility = 'hidden'; resolve(false); };
+      });
+    }
+
+    function createOptionElement(value = '') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'option-row';
+      wrapper.innerHTML = `
+        <span class="drag-handle" title="Réordonner">≡</span>
+        <input type="text" class="option-input" value="${value}" placeholder="Option" required>
+        <button type="button" class="remove-option" title="Supprimer">✕</button>
+      `;
+      wrapper.querySelector('.remove-option').addEventListener('click', () => {
+        const count = optionsContainer.querySelectorAll('.option-row').length;
+        if (count > 2) {
+          wrapper.remove();
+          refreshRemoveButtons();
+          updateAddOptionButton();
+        }
+      });
+      return wrapper;
+    }
+
+    function refreshRemoveButtons() {
+      optionsContainer.querySelectorAll('.option-row').forEach((row, idx) => {
+        row.querySelector('.remove-option').style.visibility = (idx < 2) ? 'hidden' : 'visible';
+      });
+    }
+
+    function updateAddOptionButton() {
+      addOptionBtn.disabled = optionsContainer.children.length >= 8;
+    }
+
+    Sortable.create(optionsContainer, { handle: '.drag-handle', animation: 150 });
+
+    addOptionBtn.addEventListener('click', () => {
+      if (optionsContainer.children.length < 8) {
+        optionsContainer.appendChild(createOptionElement());
+        refreshRemoveButtons();
+        updateAddOptionButton();
+      }
+    });
+
+    function prepareNewPoll() {
+      optionsContainer.innerHTML = '';
+      optionsContainer.appendChild(createOptionElement());
+      optionsContainer.appendChild(createOptionElement());
+      refreshRemoveButtons();
+      updateAddOptionButton();
+
+      const dDeb = new Date(dateDebutEl.value);
+      const next = new Date(dDeb);
+      next.setDate(next.getDate() + 1);
+      const toISO = d => d.toISOString().split('T')[0];
+
+      dateFinEl.value    = toISO(next);
+      heureDebutEl.value = '06:00';
+      heureFinEl.value   = '05:59';
+
+      heureDebutEl.disabled = false;
+      dateFinEl.disabled    = false;
+      heureFinEl.disabled   = false;
+      questionEl.disabled   = false;
+      questionEl.value      = '';
+      successMessage.textContent = '';
+    }
+
+    async function loadExistingPoll() {
+      const site = siteEl.value, dDeb = dateDebutEl.value;
+      if (!site || !dDeb) return;
+      const pollId = `${site}_${dDeb}`;
+
+      try {
+        const resp = await fetch(`https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll/${pollId}`, { credentials: 'omit' });
+        if (resp.status === 404) { prepareNewPoll(); return; }
+        if (!resp.ok) throw new Error(resp.status);
+        const data = await resp.json();
+
+        heureDebutEl.value = data.startDateTime.slice(11,16);
+        dateFinEl.value    = data.endDateTime.slice(0,10);
+        heureFinEl.value   = data.endDateTime.slice(11,16);
+        questionEl.value   = data.question;
+
+        optionsContainer.innerHTML = '';
+        data.options.forEach(opt => optionsContainer.appendChild(createOptionElement(opt)));
+        refreshRemoveButtons();
+        updateAddOptionButton();
+
+        const ended = new Date(data.endDateTime) <= new Date();
+        [heureDebutEl, dateFinEl, heureFinEl, questionEl].forEach(el => el.disabled = ended);
+        optionsContainer.querySelectorAll('.option-input')
+          .forEach(input => input.disabled = ended);
+        addOptionBtn.disabled = ended;
+
+        successMessage.textContent = '';
+      } catch (err) {
+        console.error('Erreur loadExistingPoll', err);
+        prepareNewPoll();
+      }
+    }
+
+    form.addEventListener('submit', async ev => {
+      ev.preventDefault();
+      const site     = siteEl.value;
+      const dDeb     = dateDebutEl.value;
+      const dFin     = dateFinEl.value;
+      const hDeb     = heureDebutEl.value;
+      const hFin     = heureFinEl.value;
+      const question = questionEl.value.trim();
+      const options  = Array.from(optionsContainer.querySelectorAll('.option-input'))
+                        .map(i => i.value.trim()).filter(v => v);
+
+      if (options.length < 2) {
+        successMessage.textContent = 'Veuillez fournir au moins deux options.';
+        return;
+      }
+
+      const pollId = `${site}_${dDeb}`;
+      let votes = new Array(options.length).fill(0);
+
+      try {
+        const check = await fetch(`https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll/${pollId}`, { credentials: 'omit' });
+        if (check.ok) {
+          const existing = await check.json();
+          const now = new Date(), end = new Date(existing.endDateTime);
+          if (now < end && existing.options.length === options.length) {
+            if (await showConfirmModal()) votes = existing.votes;
+          }
+        }
+      } catch (_) {}
+
+      const payload = {
+        pollId, site, question,
+        startDateTime: `${dDeb}T${hDeb}:00Z`,
+        endDateTime:   `${dFin}T${hFin}:00Z`,
+        options, votes
+      };
+
+      try {
+        const resp = await fetch('https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll', {
+          method: 'POST',
+          headers: { 'Content-Type':'application/json' },
+          credentials: 'omit',
+          body: JSON.stringify(payload)
+        });
+        if (!resp.ok) throw new Error(resp.status);
+        successMessage.textContent = 'Sondage créé / mis à jour !';
+        setTimeout(loadExistingPoll, 500);
+      } catch (err) {
+        console.error('Erreur save poll', err);
+        successMessage.textContent = `Erreur : ${err.message}`;
+      }
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const today    = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const toISO    = d => d.toISOString().split('T')[0];
+
+      dateDebutEl.value  = toISO(tomorrow);
+      heureDebutEl.value = '06:00';
+      dateFinEl.value    = toISO(tomorrow);
+      heureFinEl.value   = '05:59';
+
+      prepareNewPoll();
+      loadExistingPoll();
+      dateDebutEl.addEventListener('change', loadExistingPoll);
+    });
 
     // Toggle sidebar + fermeture de tous les sous-menus
     const sidebar   = document.getElementById('sidebar');
