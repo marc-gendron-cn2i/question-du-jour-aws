@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Widget de sondage</title>
+  <style>
+    body {
+      font-family: 'Red Hat Display', sans-serif;
+      background: #f8f8f8;
+      margin: 0;
+      padding: 0;
+    }
+    .poll-container {
+      position: relative;
+      border: 2px solid #d51D2C;
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      background: #fff;
+      overflow: hidden;
+    }
+    #poll-question {
+      font-weight: 700;
+      font-size: 20px;
+      margin-bottom: 1rem;
+      color: #000;
+    }
+    #poll-options { transition: opacity 0.5s ease; }
+    #submit-poll {
+      background: #d51D2C;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 1rem;
+      transition: opacity 0.5s ease;
+    }
+    #poll-results {
+      display: none;
+      opacity: 0;
+      margin-top: 1rem;
+      transition: opacity 0.5s ease;
+      position: relative;
+    }
+    #poll-results.visible {
+      display: block;
+      opacity: 1;
+    }
+    #poll-alert {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      width: 100%;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding-top: 2rem;
+    }
+    #poll-alert.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    #poll-alert button {
+      margin-top: 1rem;
+      background: #d51D2C;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .about {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      font-size: 12px;
+      color: #000;
+      cursor: help;
+      z-index: 1000;
+      line-height: 1.2;
+    }
+    .about::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      right: 0;
+      background: #fff;
+      color: #000;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      white-space: normal;
+      max-width: 200px;
+      word-wrap: break-word;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+      z-index: 1001;
+    }
+    .about:hover::after,
+    .about:focus::after,
+    .about.show-tooltip::after {
+      opacity: 1;
+      visibility: visible;
+    }
+  </style>
+</head>
+<body>
+  <div class="poll-container">
+    <div style="font-weight:bold; color:#d51D2C; display:flex; align-items:center; font-size:18px; margin-bottom:1rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
+           style="margin-right:.5rem; width:20px; height:20px; fill:#d51D2C;">
+        <path d="M4 21h2V10H4v11zm7 0h2V3h-2v18zm7 0h2v-6h-2v6z"/>
+      </svg>
+      La question du jour
+    </div>
+
+    <div id="poll-question">Chargement…</div>
+    <div id="poll-options"></div>
+    <button id="submit-poll" style="display:none;">Soumettre</button>
+    <div id="poll-results"></div>
+    <div id="poll-alert"></div>
+
+    <div class="about" tabindex="0"
+         data-tooltip="Seuls les utilisateurs connectés peuvent voter, une seule réponse par question est permise. Résultats non scientifiques, à valeur informative seulement.">
+      À propos de la question du jour
+    </div>
+  </div>
+
+  <script type="module">
+    // --- CONFIGURATION API ---
+    const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
+    const FETCH_OPTS = {
+      headers: { 'Content-Type': 'application/json' }
+    };
+
+    // --- CONTEXTE ---
+    const fusion      = window.Fusion || {};
+    const CURRENT_SITE= (fusion.arcSite||'').replace(/-/g, '');
+    const localDate   = new Date().toLocaleString('en-CA',{timeZone:'America/Toronto'}).split(',')[0];
+    const pollId      = `${CURRENT_SITE}_${localDate}`;
+    const userId      = localStorage.getItem("pollUserId") || (() => {
+      const u = crypto.randomUUID();
+      localStorage.setItem("pollUserId", u);
+      return u;
+    })();
+    function getArcIdUUID() {
+      try {
+        return JSON.parse(localStorage.getItem("ArcId.USER_INFO"))?.uuid || null;
+      } catch { return null; }
+    }
+
+    // --- APPELS API ---
+    async function fetchPoll(id) {
+      const res = await fetch(`${API_BASE}/poll/${id}`, {
+        method: 'GET',
+        ...FETCH_OPTS
+      });
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }
+
+    async function hasVoted(vk) {
+      const res = await fetch(`${API_BASE}/vote/${vk}`, {
+        method: 'GET',
+        ...FETCH_OPTS
+      });
+      return res.ok;
+    }
+
+    async function sendVote(pollId, userId, arcId, option) {
+      const payload = { pollId, userId, arcId, option };
+      const res = await fetch(`${API_BASE}/vote`, {
+        method: 'POST',
+        ...FETCH_OPTS,
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) throw new Error(res.status);
+      return res.json();
+    }
+
+    // --- RENDER ---
+    async function renderPoll() {
+      const container = document.querySelector('.poll-container');
+      const qEl = document.getElementById("poll-question");
+      const oEl = document.getElementById("poll-options");
+      const bEl = document.getElementById("submit-poll");
+      const aEl = document.getElementById("poll-alert");
+      const rEl = document.getElementById("poll-results");
+
+      // reset
+      qEl.textContent = "";
+      oEl.innerHTML = ""; oEl.style.display="block"; oEl.style.opacity="1";
+      bEl.style.display="block"; bEl.style.opacity="1";
+      aEl.textContent=""; aEl.classList.remove('visible');
+      rEl.innerHTML=""; rEl.style.display="none"; rEl.classList.remove('visible');
+
+      let data;
+      try {
+        data = await fetchPoll(pollId);
+      } catch {
+        container.style.display = 'none';
+        return;
+      }
+
+      const now = new Date(),
+            start = new Date(data.startDateTime),
+            end   = new Date(data.endDateTime);
+
+      if (data.site !== CURRENT_SITE) {
+        qEl.textContent = "Aucune question pour ce site.";
+        return;
+      }
+      if (now < start) {
+        qEl.textContent = "Trop tôt. Débute à : " + start.toLocaleString('fr-FR');
+        return;
+      }
+      if (now >= end) {
+        qEl.textContent = "Trop tard. Fin à : " + end.toLocaleString('fr-FR');
+        return;
+      }
+
+      qEl.textContent = data.question;
+
+      const arcId = getArcIdUUID();
+      const vk    = `${arcId||userId}_${pollId}`;
+
+      if (await hasVoted(vk)) {
+        oEl.style.display = "none";
+        bEl.style.display = "none";
+        lockContainerHeight(container);
+        showResultsWithFade(pollId);
+      } else {
+        oEl.innerHTML = data.options.map((opt,idx)=>
+          `<label style="display:block;margin-bottom:8px;">
+             <input type="radio" name="poll-choice" value="${idx}" style="margin-right:8px;">${opt}
+           </label>`
+        ).join("");
+        bEl.style.display="block";
+        lockContainerHeight(container);
+      }
+    }
+
+    async function submitVote() {
+      const selected = document.querySelector("input[name='poll-choice']:checked");
+      const aEl = document.getElementById("poll-alert");
+      const oEl = document.getElementById("poll-options");
+      const bEl = document.getElementById("submit-poll");
+      const container = document.querySelector('.poll-container');
+      const arcId = getArcIdUUID();
+
+      if (!arcId) {
+        oEl.style.display="none"; bEl.style.display="none"; lockContainerHeight(container);
+        aEl.innerHTML = `
+          <div>Vous devez être connecté pour répondre.</div>
+          <button id="login-button">Me connecter</button>`;
+        aEl.classList.add('visible');
+        document.getElementById('login-button').onclick = ()=> window.location.href='/connexion';
+        return;
+      }
+      if (!selected) {
+        aEl.textContent="Veuillez choisir une option.";
+        aEl.classList.add('visible');
+        return;
+      }
+
+      const index = parseInt(selected.value,10);
+      try {
+        await sendVote(pollId, userId, arcId, index);
+      } catch {
+        aEl.textContent="Erreur lors de l’envoi.";
+        aEl.classList.add('visible');
+        return;
+      }
+
+      oEl.style.display="none"; bEl.style.display="none";
+      aEl.textContent="Merci pour votre réponse !";
+      aEl.classList.add('visible');
+      setTimeout(()=>{
+        aEl.classList.remove('visible');
+        setTimeout(()=>{ aEl.textContent=''; },500);
+        showResultsWithFade(pollId);
+      },2000);
+    }
+
+    function showResultsWithFade(id) {
+      const rEl = document.getElementById("poll-results");
+      const container = document.querySelector('.poll-container');
+      container.style.removeProperty('height');
+      container.style.overflow="visible";
+      rEl.style.display="block";
+      requestAnimationFrame(()=> rEl.classList.add('visible'));
+
+      fetch(`${API_BASE}/poll/${id}`, { method:'GET', ...FETCH_OPTS })
+        .then(r=>r.json())
+        .then(data=>{
+          const total = data.votes.reduce((a,b)=>a+b,0);
+          rEl.innerHTML = data.options.map((opt,idx)=>{
+            const pct = total?Math.round(data.votes[idx]/total*100):0;
+            return `<div style="margin-bottom:10px;">
+              <div style="display:flex;justify-content:space-between;">
+                <span>${opt}</span><span><b>${pct}%</b></span>
+              </div>
+              <div style="background:#eee;border-radius:4px;height:6px;overflow:hidden;">
+                <div style="width:${pct}%;height:6px;background:#d51D2C;"></div>
+              </div>
+            </div>`;
+          }).join("")+
+          `<div style="margin-top:8px;font-size:14px;">
+             ${total} répondant${total>1?'s':''}
+           </div>`;
+        })
+        .catch(console.error);
+    }
+
+    function lockContainerHeight(c) {
+      c.style.height = c.offsetHeight + "px";
+    }
+
+    document.getElementById("submit-poll")
+            .addEventListener("click", submitVote);
+
+    renderPoll();
+  </script>
+
+  <script>
+    // Tooltip « À propos »
+    const aboutEl = document.querySelector('.about');
+    function openTooltip() { aboutEl.classList.add('show-tooltip'); localStorage.setItem('tooltipShown','true'); }
+    function closeTooltip(){ aboutEl.classList.remove('show-tooltip'); localStorage.setItem('tooltipShown','false'); }
+    aboutEl.addEventListener('mouseenter', openTooltip);
+    aboutEl.addEventListener('mouseleave', closeTooltip);
+    aboutEl.addEventListener('click', ()=>{
+      aboutEl.classList.toggle('show-tooltip');
+      localStorage.setItem('tooltipShown', aboutEl.classList.contains('show-tooltip'));
+    });
+    aboutEl.addEventListener('blur', closeTooltip);
+    if (localStorage.getItem('tooltipShown')==='true') {
+      aboutEl.classList.add('show-tooltip');
+    }
+  </script>
+</body>
+</html>
