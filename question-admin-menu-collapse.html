@@ -23,6 +23,7 @@
     }
     label {
       display: block;
+      font-family: 'Red Hat Display', sans-serif;
       margin-top: 1rem;
       font-weight: 600;
     }
@@ -52,7 +53,7 @@
     .drag-handle {
       cursor: grab;
       font-size: 1.2rem;
-      color: #888;
+      color: #D51D2c;
     }
     .option-row input {
       flex: 1;
@@ -175,6 +176,7 @@
 
 .submenu a:hover {
   background: rgba(0, 0, 0, 0.05);
+  color: #D51D2C;
 }
 
     .menu-link {
@@ -199,7 +201,8 @@
 
     /* BOUTON TOGGLE SIDEBAR */
     .sidebar-toggle-btn {
-      background: #D51D2C;
+      background: #ffffff;
+      color: #d51D2C;
       border: 1px solid #ccd3d8;
       border-radius: 50%;
       width: 36px;
@@ -226,6 +229,51 @@
       width: 100%;
       max-width: 600px;
     }
+    /* 2.1 Pied de sidebar : structure horizontale */
+.sidebar-footer {
+  margin-top: auto;               /* pousse vers le bas */
+  padding: 1rem;                  /* espace intérieur */
+  display: flex;
+  align-items: center;
+  justify-content: space-between; /* logo à gauche, bouton à droite */
+}
+
+/* 2.2 Logo en bas à gauche */
+.footer-logo {
+  max-height: 32px;               /* ajustez selon votre visuel */
+  width: auto;
+}
+
+/* 2.3 Bouton toggle « inline » */
+.sidebar-toggle-btn {
+  position: static;               /* plus absolute */
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background .2s ease;
+}
+
+/* 2.4 Chevron blanc au hover */
+.sidebar-toggle-btn:hover i {
+  color: #ffffff;
+}
+
+/* 2.5 (optionnel) fond un peu plus sombre au hover sur le bouton */
+.sidebar-toggle-btn:hover {
+  background: #c21a26;
+}
+
+.sidebar.collapsed .footer-logo {
+  display: none;
+}
+
+
   </style>
 </head>
 <body>
@@ -243,15 +291,22 @@
             <i class="fa-solid fa-chevron-down toggle-icon"></i>
           </button>
           <div class="submenu">
-            <a href="#">Résultats</a>
-            <a href="#">Classement des répondants</a>
+              <a href="/question-admin.html">Créer ou mettre à jour une question</a>
+            <a href="/analytics.html">Résultats</a>
+            <a href="/classement.html">Classement des répondants</a>
           </div>
         </div>
       </div>
-      <button id="sidebarToggle" class="sidebar-toggle-btn">
-        <i class="fa-solid fa-chevron-left"></i>
-      </button>
-    </aside>
+     
+  <div class="sidebar-footer">
+    <img src="https://cloudfront-us-east-1.images.arcpublishing.com/lescoopsdelinformation/H3YSM5YWJZGQTL2NZAGXWXNEGQ.png"
+         alt="Les Coops de l'information"
+         class="footer-logo">
+    <button id="sidebarToggle" class="sidebar-toggle-btn">
+      <i class="fa-solid fa-chevron-left"></i>
+    </button>
+  </div>
+</aside>
 
     <main class="content">
       <div class="container">
