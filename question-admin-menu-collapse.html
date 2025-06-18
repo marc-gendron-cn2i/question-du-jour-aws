@@ -6,275 +6,265 @@
   <title>Créer / Mettre à jour une question</title>
   <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-  <style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-    }
-    body {
-      font-family: 'Red Hat Display', sans-serif;
-      background: #f8f8f8;
-    }
-    h1 {
-      color: #333;
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    label {
-      display: block;
-      font-family: 'Red Hat Display', sans-serif;
-      margin-top: 1rem;
-      font-weight: 600;
-    }
-    .inline-inputs {
-      display: flex;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-    .inline-inputs > div {
-      flex: 1;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 0.5rem;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-family: inherit;
-      box-sizing: border-box;
-    }
-    #optionsContainer .option-row {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.5rem;
-    }
-    
-    .drag-handle {
-      cursor: grab;
-      font-size: 1.2rem;
-      color: #D51D2c;
-    }
-    .option-row input {
-      flex: 1;
-    }
-    .remove-option {
-      background: transparent;
-      border: none;
-      font-size: 1.2rem;
-      color: #d51D2C;
-      cursor: pointer;
-    }
-    button {
-      margin-top: 1.5rem;
-      background: #d51D2C;
-      color: #fff;
-      border: none;
-      padding: 10px 20px;
-      font-size: 1rem;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #c21a26;
-    }
-    .message {
-      margin-top: 1rem;
-      font-weight: 600;
-    }
+<style>
+  /* ——— Reset global ——— */
+  html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  body {
+    font-family: 'Red Hat Display', sans-serif;
+    background: #f8f8f8;
+  }
 
-    /* LAYOUT GÉNÉRAL */
-    .layout {
-      display: flex;
-      min-height: 100vh;
-    }
+  /* ——— Formulaire principal ——— */
+  h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  label {
+    display: block;
+    margin-top: 1rem;
+    font-weight: 600;
+  }
+  .inline-inputs {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .inline-inputs > div {
+    flex: 1;
+  }
+  input, textarea, select {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-family: inherit;
+    box-sizing: border-box;
+  }
+  #optionsContainer .option-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .drag-handle {
+    cursor: grab;
+    font-size: 1.2rem;
+    color: #D51D2C;
+  }
+  .option-row input { flex: 1; }
+  .remove-option {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: #D51D2C;
+    cursor: pointer;
+  }
+  button {
+    margin-top: 1.5rem;
+    background: #D51D2C;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    font-size: 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  button:hover {
+    background: #C21A26;
+  }
+  .message {
+    margin-top: 1rem;
+    font-weight: 600;
+  }
 
-    /* SIDEBAR */
-    .sidebar {
-      width: 250px;
-      background: #f8f8f8;
-      border-right: 1px solid #ddd;
-      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
-      display: flex;
-      flex-direction: column;
-      transition: width 0.3s ease;
-      position: relative; /* pour position:absolute du bouton */
-    }
-    .sidebar.collapsed {
-      width: 60px;
-    }
-    .sidebar-header {
-      display: flex;
-      align-items: center;
-      padding: 1rem;
-    }
-    .logo-icon {
-      font-size: 1.5rem;
-      color: #D51D2C;
-    }
-    .sidebar-title {
-      font-weight: bold;
-      margin-left: 0.5rem;
-      color: #333;
-    }
-    .menu-toggle > i:first-child {
-  /* ajoutez ceci */
-  margin-right: 1rem;
-  color: #D51D2C;
+  /* ——— Layout général ——— */
+  .layout {
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ——— Sidebar ——— */
+  .sidebar {
+    width: 250px;
+    background: #f8f8f8;
+    border-right: 1px solid #ddd;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+  }
+  .sidebar.collapsed {
+    width: 60px;
+  }
+
+  /* En-tête sidebar */
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+  }
+  .logo-icon {
+    font-size: 1.5rem;
+    color: #D51D2C;
+  }
+  .sidebar-title {
+    font-weight: bold;
+    margin-left: 0.5rem;
+    color: #333;
+  }
+
+  /* ——— Menu ——— */
+  .menu-section {
+    flex: 1;
+    padding-top: 1rem;
+  }
+  .menu-group {
+    padding: 0 1rem;
+  }
+  .menu-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    color: #333;
+    cursor: pointer;
+    justify-content: flex-start; /* aligné à gauche quand ouvert */
+    gap: 0.75rem;
+    transition: background 0.2s ease;
+  }
+  .menu-toggle > i:first-child {
+    font-size: 1.25rem;
+    color: #D51D2C;
+  }
+  .menu-toggle:hover {
+    background: rgba(0,0,0,0.05);
+  }
+  .menu-toggle .toggle-icon {
+    margin-left: auto;
+    font-size: 1rem;
+    color: #333;
+  }
+
+  /* Sous-menu */
+  .submenu {
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+    padding-left: 1.5rem;
+  }
+  .submenu a {
+    display: block;
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    color: #333;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .submenu a:hover {
+    background: rgba(0,0,0,0.05);
+    color: #D51D2C;
+  }
+
+  /* ——— Footer sidebar ——— */
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-logo {
+    max-height: 32px;
+    width: auto;
+  }
+  .sidebar-toggle-btn {
+    background: #fff;
+    color: #D51D2C;
+    border: 1px solid #ccd3d8;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+    position: static;
+  }
+  .sidebar-toggle-btn:hover {
+    background: #C21A26;
+  }
+  .sidebar-toggle-btn:hover i {
+    color: #fff;
+  }
+
+  /* ——— Mode ouvert (sidebar non-collapsed) ——— */
+  .sidebar:not(.collapsed) .submenu {
+    max-height: 500px; /* ajuster si + de liens */
+    opacity: 1;
+  }
+  .sidebar:not(.collapsed) .menu-toggle {
+    justify-content: flex-start;
+  }
+
+  /* ——— Mode réduit (sidebar.collapsed) ——— */
+  /* Cacher labels et titre */
+  .sidebar.collapsed .label,
+  .sidebar.collapsed .sidebar-title {
+    display: none !important;
+  }
+  /* Cacher le chevron */
+  .sidebar.collapsed .menu-toggle .toggle-icon {
+    display: none !important;
+  }
+  /* Centrage et taille uniforme des icônes */
+  .sidebar.collapsed .sidebar-header,
+  .sidebar.collapsed .menu-toggle,
+  .sidebar.collapsed .menu-link {
+    justify-content: center;
+  }
+  .sidebar.collapsed .logo-icon,
+  .sidebar.collapsed .menu-toggle > i,
+  .sidebar.collapsed .menu-link i {
+    font-size: 1.5rem;
+    margin: 0;
+    min-width: auto;
+  }
+  /* Cacher logo pied de page */
+  .sidebar.collapsed .footer-logo {
+    display: none !important;
+  }
+
+  /* ——— Contenu principal ——— */
+  .content {
+    flex: 1;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+  }
+  .container {
+    width: 100%;
+    max-width: 600px;
+  }
+  /* En mode ouvert, la label prend tout l’espace et s’aligne à gauche */
+.sidebar:not(.collapsed) .menu-toggle .label {
+  flex: 1;
+  text-align: left;
 }
 
-    /* MASQUE TOUT CE QUI DÉPASSE QUAND ON COLLAPSE */
-    .sidebar.collapsed .sidebar-title,
-    .sidebar.collapsed .label,
-    .sidebar.collapsed .submenu,
-    .sidebar.collapsed .toggle-icon {
-      display: none !important;
-    }
-
-    .menu-section {
-      flex: 1;
-      padding-top: 1rem;
-    }
-    
-    .menu-group {
-      padding: 0 1rem;
-    }
-    .menu-toggle {
-      width: 100%;
-      background: none;
-      border: none;
-      display: flex;
-      align-items: center;
-      padding: 0.75rem 1rem;
-      font-size: 1rem;
-      color: #333;
-      cursor: pointer;
-      justify-content: space-between;
-    }
-    .menu-toggle:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
-    .menu-toggle .toggle-icon {
-      margin-left: auto;
-    }
-    .menu-toggle .hover {
-    background: rgba(0, 0, 0, 0.05);
-    }
-    
-    .submenu {
-      display: none;
-      padding-left: 1.5rem;
-    }
-    .submenu a {
-  display: block;
-  /* passez de `padding: 0.5rem 0;` à : */
-  padding: 0.5rem 1rem;
-  font-size: 0.95rem;
-  color: #333;
-  text-decoration: none;
-}
-
-.submenu a:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: #D51D2C;
-}
-
-    .menu-link {
-      display: flex;
-      align-items: center;
-      color: #333;
-      text-decoration: none;
-      font-weight: 500;
-    }
-    .menu-link.active {
-      background: #fff;
-      font-weight: 700;
-      color: #d51D2C;
-      border-left: 4px solid #d51D2C;
-    }
-    .menu-link i {
-      margin-right: 0.75rem;
-      color: #c21a26;
-      min-width: 20px;
-      text-align: center;
-    }
-
-    /* BOUTON TOGGLE SIDEBAR */
-    .sidebar-toggle-btn {
-      background: #ffffff;
-      color: #d51D2C;
-      border: 1px solid #ccd3d8;
-      border-radius: 50%;
-      width: 36px;
-      height: 36px;
-      /* positionné toujours visible */
-      position: absolute;
-      bottom: 1rem;
-      right: -18px; /* pour qu’il dépasse de la sidebar */
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-    }
-
-    /* CONTENU PRINCIPAL */
-    .content {
-      flex: 1;
-      padding: 2rem;
-      display: flex;
-      justify-content: center;
-    }
-    .container {
-      width: 100%;
-      max-width: 600px;
-    }
-    /* 2.1 Pied de sidebar : structure horizontale */
-.sidebar-footer {
-  margin-top: auto;               /* pousse vers le bas */
-  padding: 1rem;                  /* espace intérieur */
-  display: flex;
-  align-items: center;
-  justify-content: space-between; /* logo à gauche, bouton à droite */
-}
-
-/* 2.2 Logo en bas à gauche */
-.footer-logo {
-  max-height: 32px;               /* ajustez selon votre visuel */
-  width: auto;
-}
-
-/* 2.3 Bouton toggle « inline » */
-.sidebar-toggle-btn {
-  position: static;               /* plus absolute */
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #ffffff;
-  border: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: background .2s ease;
-}
-
-/* 2.4 Chevron blanc au hover */
-.sidebar-toggle-btn:hover i {
-  color: #ffffff;
-}
-
-/* 2.5 (optionnel) fond un peu plus sombre au hover sur le bouton */
-.sidebar-toggle-btn:hover {
-  background: #c21a26;
-}
-
-.sidebar.collapsed .footer-logo {
-  display: none;
-}
+</style>
 
 
-  </style>
 </head>
 <body>
   <div class="layout">
@@ -585,16 +575,28 @@
       }
     });
 
-    // Toggle de chaque sous-menu
-    document.querySelectorAll('.menu-toggle').forEach(button => {
-      button.addEventListener('click', () => {
-        const sub = button.nextElementSibling;
-        sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
-        const ic = button.querySelector('.toggle-icon');
-        ic.classList.toggle('fa-chevron-up');
-        ic.classList.toggle('fa-chevron-down');
-      });
-    });
+// Au lieu de votre ancien « Toggle de chaque sous-menu », mettez ceci :
+document.querySelectorAll('.menu-toggle').forEach(button => {
+  button.addEventListener('click', ev => {
+    const isQuestionToggle = !!button.querySelector('i.fa-square-poll-horizontal');
+    const isCollapsed     = sidebar.classList.contains('collapsed');
+
+    if (isQuestionToggle && isCollapsed) {
+      // menu fermé + icône sondage = navigation
+      if (window.location.pathname !== '/question-admin.html') {
+        window.location.href = '/question-admin.html';
+      }
+      return;
+    }
+
+    // sinon, on fait le toggle normal du sous-menu
+    const sub = button.nextElementSibling;
+    sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+    const ic = button.querySelector('.toggle-icon');
+    ic.classList.toggle('fa-chevron-up');
+    ic.classList.toggle('fa-chevron-down');
+  });
+});
   </script>
 </body>
 </html>
