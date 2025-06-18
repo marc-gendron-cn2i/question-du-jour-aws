@@ -290,6 +290,25 @@
   font-size: 1.25rem;
   color: #D51D2C;
 }
+/* → Remplacer le display:none brutal par un fade doux */
+
+/* 1) État “collapsé” : on cache en fondu */
+.sidebar.collapsed .label,
+.sidebar.collapsed .sidebar-title {
+  visibility: hidden;
+  opacity: 0;
+  /* on retarde la disparition de visibility pour que le fade soit propre */
+  transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+}
+
+/* 2) État “ouvert” : on ré-affiche en fondu */
+.sidebar:not(.collapsed) .label,
+.sidebar:not(.collapsed) .sidebar-title {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.3s ease;
+}
+
 
 </style>
 
@@ -613,21 +632,17 @@
       }
     });
 
-// Au lieu de votre ancien « Toggle de chaque sous-menu », mettez ceci :
 document.querySelectorAll('.menu-toggle').forEach(button => {
-  button.addEventListener('click', ev => {
-    const isQuestionToggle = !!button.querySelector('i.fa-square-poll-horizontal');
-    const isCollapsed     = sidebar.classList.contains('collapsed');
-
-    if (isQuestionToggle && isCollapsed) {
-      // menu fermé + icône sondage = navigation
-      if (window.location.pathname !== '/question-admin.html') {
-        window.location.href = '/question-admin.html';
+  button.addEventListener('click', () => {
+    // 1️⃣ si le bouton a un data-url => navigation
+    const url = button.dataset.url;
+    if (url) {
+      if (window.location.pathname !== url) {
+        window.location.href = url;
       }
       return;
     }
-
-    // sinon, on fait le toggle normal du sous-menu
+    // 2️⃣ sinon on fait le toggle du sous-menu comme avant
     const sub = button.nextElementSibling;
     sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
     const ic = button.querySelector('.toggle-icon');
@@ -635,6 +650,7 @@ document.querySelectorAll('.menu-toggle').forEach(button => {
     ic.classList.toggle('fa-chevron-down');
   });
 });
+
   </script>
 </body>
 </html>
