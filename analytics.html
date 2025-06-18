@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Analyse des sondages</title>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    /* ——— Styles généraux (appliqués depuis question-admin.html) ——— */
+    html, body { height:100%; margin:0; padding:0; }
+    body { font-family:'Red Hat Display',sans-serif; background:#f8f8f8; }
+
+    /* ——— Layout général ——— */
+    .layout { display:flex; min-height:100vh; }
+
+    /* ——— Sidebar ——— */
+    .sidebar {
+      width:250px;
+      background:#f8f8f8;
+      border-right:1px solid #ddd;
+      box-shadow:2px 0 5px rgba(0,0,0,0.1);
+      display:flex;
+      flex-direction:column;
+      transition:width .3s ease;
+    }
+    .sidebar.collapsed { width:60px; }
+
+    .sidebar-header {
+      display:flex;
+      align-items:center;
+      padding:1rem;
+      text-decoration:none;
+      color:inherit;
+      cursor:pointer;
+    }
+    .sidebar-header:hover { background:rgba(0,0,0,0.05); }
+
+    .logo-icon { font-size:1.5rem; color:#D51D2C; }
+    .sidebar-title { font-weight:bold; margin-left:.5rem; color:#333; }
+
+    .menu-section { flex:1; padding-top:1rem; }
+    .menu-group { padding:0 1rem; }
+
+    .menu-toggle {
+      width:100%;
+      background:none;
+      border:none;
+      display:flex;
+      align-items:center;
+      padding:.75rem 1rem;
+      font-size:1rem;
+      color:#333;
+      cursor:pointer;
+      justify-content:flex-start;
+      gap:.75rem;
+      transition:background .2s ease;
+    }
+    .menu-toggle > i:first-child { font-size:1.25rem; color:#D51D2C; }
+    .menu-toggle:hover { background:rgba(0,0,0,0.05); }
+
+    .menu-toggle .label { flex:1; text-align:left; }
+    .menu-toggle .toggle-icon { margin-left:auto; font-size:1rem; color:#333; }
+
+    .submenu {
+      overflow:hidden;
+      max-height:0;
+      opacity:0;
+      transition:max-height .3s ease, opacity .3s ease;
+      padding-left:1.5rem;
+    }
+    .submenu a {
+      display:block;
+      padding:.5rem 1rem;
+      font-size:.95rem;
+      color:#333;
+      text-decoration:none;
+      transition:background .2s ease, color .2s ease;
+    }
+    .submenu a:hover { background:rgba(0,0,0,0.05); color:#D51D2C; }
+
+    .sidebar-footer {
+      margin-top:auto;
+      padding:1rem;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .footer-logo { max-height:32px; width:auto; }
+    .sidebar-toggle-btn {
+      background:#fff;
+      color:#D51D2C;
+      border:1px solid #ccd3d8;
+      border-radius:50%;
+      width:36px; height:36px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      cursor:pointer;
+      transition:background .2s ease, color .2s ease;
+    }
+    .sidebar-toggle-btn:hover { background:#C21A26; }
+    .sidebar-toggle-btn:hover i { color:#fff; }
+
+    /* ——— Transition ouverture/collapse ——— */
+    .sidebar:not(.collapsed) .submenu { max-height:500px; opacity:1; }
+    .sidebar.collapsed .label,
+    .sidebar.collapsed .sidebar-title,
+    .sidebar.collapsed .menu-toggle .toggle-icon {
+      display:none !important;
+    }
+    .sidebar.collapsed .sidebar-header,
+    .sidebar.collapsed .menu-toggle {
+      justify-content:center;
+    }
+    .sidebar.collapsed .logo-icon,
+    .sidebar.collapsed .menu-toggle > i {
+      font-size:1.5rem; margin:0; min-width:auto;
+    }
+    .sidebar.collapsed .footer-logo { display:none !important; }
+
+    /* ——— Contenu principal ——— */
+    .content {
+      flex:1;
+      padding:2rem;
+      background:#f8f8f8;
+    }
+    .container {
+      width:100%;
+      max-width:700px;
+      margin:0 auto;
+    }
+
+    /* ——— Styles de analytics.html originels ——— */
+    h1 { color:#d51D2C; }
+    label { font-weight:700; display:block; margin-bottom:.25rem; }
+    select, input[type="date"] {
+      padding:10px; font-size:16px; border-radius:6px;
+      border:1px solid #ccc; width:100%; box-sizing:border-box;
+      font-family:'Red Hat Display',sans-serif;
+    }
+    .inline-inputs { display:flex; gap:1rem; margin-bottom:1rem; }
+    .inline-inputs > div { flex:1; }
+    .btn {
+      background:#d51D2C; color:#fff; border:none;
+      padding:10px 16px; border-radius:6px; cursor:pointer;
+      font-size:16px; margin-bottom:1rem;
+    }
+    .results-box {
+      background:#fff; border:1px solid #ccc;
+      border-radius:6px; padding:1rem; margin-top:1.5rem;
+    }
+    .bar { height:6px; background:#d51D2C; border-radius:4px; }
+    .result { margin-bottom:1rem; }
+    .flex { display:flex; justify-content:space-between; font-size:15px; }
+    .meta { font-size:14px; color:#444; margin-top:.5rem; }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <a href="/menu-outils.html" class="sidebar-header">
+        <i class="fa-solid fa-star-of-life logo-icon"></i>
+        <span class="sidebar-title">Outils numériques</span>
+      </a>
+      <div class="menu-section">
+        <!-- Groupe sondage -->
+        <div class="menu-group">
+          <button class="menu-toggle">
+            <i class="fa-solid fa-chart-simple"></i>
+            <span class="label">La question du jour</span>
+            <i class="fa-solid fa-chevron-down toggle-icon"></i>
+          </button>
+          <div class="submenu">
+            <a href="/question-admin.html">Créer / mettre à jour</a>
+            <a href="/analytics.html">Résultats</a>
+            <a href="/classement.html">Classement</a>
+          </div>
+        </div>
+        <!-- Groupe générateur -->
+        <div class="menu-group">
+          <button class="menu-toggle" data-url="/page/generateur-bouton.html">
+            <i class="fa-solid fa-arrow-pointer"></i>
+            <span class="label">Générateur de bouton</span>
+          </button>
+        </div>
+      </div>
+      <div class="sidebar-footer">
+        <img src="https://cloudfront-us-east-1.images.arcpublishing.com/lescoopsdelinformation/H3YSM5YWJZGQTL2NZAGXWXNEGQ.png"
+             alt="Les Coops de l'information" class="footer-logo">
+        <button id="sidebarToggle" class="sidebar-toggle-btn">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Contenu principal analytics -->
+    <main class="content">
+      <div class="container">
+        <h1>Analyse des sondages</h1>
+
+        <div class="inline-inputs">
+          <div>
+            <label for="site">Site</label>
+            <select id="site">
+              <option value="lesoleil">Le Soleil</option>
+              <option value="ledroit">Le Droit</option>
+              <option value="lenouvelliste">Le Nouvelliste</option>
+              <option value="lequotidien">Le Quotidien</option>
+              <option value="latribune">La Tribune</option>
+              <option value="lavoixdelest">La Voix de l'Est</option>
+            </select>
+          </div>
+          <div>
+            <label for="date">Date</label>
+            <input type="date" id="date" />
+          </div>
+        </div>
+
+        <button class="btn" id="loadData">Afficher les données</button>
+        <div class="results-box" id="resultsContainer">
+          <div style="color:#888;">Sélectionnez un site et une date.</div>
+        </div>
+        <canvas id="hourlyChart" height="120" style="margin-top:2rem;"></canvas>
+      </div>
+    </main>
+  </div>
+
+  <!-- Scripts -->
+  <script>
+    // ---------- Menu sidebar ----------
+    const sidebar   = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    // Collapse / expand sidebar
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      const ic = toggleBtn.querySelector('i');
+      ic.classList.toggle('fa-chevron-right');
+      ic.classList.toggle('fa-chevron-left');
+      // refermer tous les sous-menus si collapsed
+      if (sidebar.classList.contains('collapsed')) {
+        document.querySelectorAll('.submenu')
+                .forEach(sub => sub.style.display = 'none');
+      }
+    });
+    // Toggle des sous-menus et navigation
+    document.querySelectorAll('.menu-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const url = btn.dataset.url;
+        if (url) {
+          if (window.location.pathname !== url) {
+            window.location.href = url;
+          }
+          return;
+        }
+        const sub = btn.nextElementSibling;
+        sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+        const ic = btn.querySelector('.toggle-icon');
+        ic.classList.toggle('fa-chevron-up');
+        ic.classList.toggle('fa-chevron-down');
+      });
+    });
+
+    // ---------- Analytics JS originel ----------
+    const siteEl = document.getElementById("site");
+    const dateEl = document.getElementById("date");
+    const loadBtn = document.getElementById("loadData");
+    const resultsContainer = document.getElementById("resultsContainer");
+    const ctx = document.getElementById("hourlyChart").getContext("2d");
+    let chart;
+
+    async function loadResults() {
+      const site = siteEl.value;
+      const date = dateEl.value;
+      if (!site || !date) return;
+      const pollId = `${site}_${date}`;
+      let pollData;
+      try {
+        const resp = await fetch(
+          `https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/poll/${pollId}`
+        );
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        pollData = await resp.json();
+      } catch (err) {
+        resultsContainer.innerHTML = `<div style="color:red;">Erreur chargement sondage : ${err.message}</div>`;
+        return;
+      }
+
+      const total = pollData.votes.reduce((a,b)=>a+b,0);
+      resultsContainer.innerHTML = `
+        <h3 style="margin-bottom:1rem;">${pollData.question}</h3>
+        ${pollData.options.map((opt,i) => {
+          const pct = total ? Math.round((pollData.votes[i]/total)*100) : 0;
+          return `
+            <div class="result">
+              <div class="flex">
+                <span>${opt}</span>
+                <span><b>${pct}%</b></span>
+              </div>
+              <div style="background:#eee;border-radius:4px;height:6px;">
+                <div class="bar" style="width:${pct}%;"></div>
+              </div>
+            </div>`;
+        }).join('')}
+        <div class="meta"><b>${total}</b> répondant${total>1?'s':''}</div>
+      `;
+
+      let hoursUTC;
+      try {
+        const resp2 = await fetch(
+          `https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod/hourly?pollId=${pollId}`
+        );
+        if (!resp2.ok) throw new Error(`HTTP ${resp2.status}`);
+        hoursUTC = await resp2.json();
+      } catch (err) {
+        console.error('Erreur horaire :', err);
+        return;
+      }
+
+      const offsetH = -new Date().getTimezoneOffset()/60;
+      const hoursLocal = new Array(24).fill(0);
+      for (let h=0; h<24; h++) {
+        const loc = (h + offsetH + 24) % 24;
+        hoursLocal[loc] = hoursUTC[h] || 0;
+      }
+      const labels = hoursLocal.map((_,i)=>`${i.toString().padStart(2,'0')}h`);
+
+      const dataChart = {
+        labels,
+        datasets: [{
+          label:"Votes par heure (heure locale)",
+          data:hoursLocal,
+          fill:false,
+          tension:0.2,
+          borderColor:"#d51D2C",
+          backgroundColor:"#d51D2C"
+        }]
+      };
+      if (chart) chart.destroy();
+      chart = new Chart(ctx, {
+        type:'line',
+        data:dataChart,
+        options:{
+          scales:{
+            y:{ beginAtZero:true, title:{ display:true, text:"Nombre de votes" }},
+            x:{ title:{ display:true, text:"Heure de la journée" }}
+          }
+        }
+      });
+    }
+
+    loadBtn.addEventListener("click", loadResults);
+
+ window.addEventListener('DOMContentLoaded', () => {
+
+const today      = new Date();
+const yesterday  = new Date(today);
+yesterday.setDate(today.getDate() - 1);
+const yesterdayStr = yesterday.toISOString().split('T')[0];
+const todayStr     = today.toISOString().split('T')[0];
++
++  // Date par défaut = veille, max = aujourd'hui
++  dateEl.value = yesterdayStr;
++  dateEl.max   = todayStr;
+ });
+  </script>
+</body>
+</html>
+
