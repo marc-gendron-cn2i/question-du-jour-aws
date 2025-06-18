@@ -17,7 +17,7 @@
       background: #f8f8f8;
     }
     h1 {
-      color: #d51D2C;
+      color: #333;
       text-align: center;
       margin-bottom: 2rem;
     }
@@ -48,6 +48,7 @@
       gap: 0.5rem;
       margin-bottom: 0.5rem;
     }
+    
     .drag-handle {
       cursor: grab;
       font-size: 1.2rem;
@@ -90,8 +91,9 @@
     /* SIDEBAR */
     .sidebar {
       width: 250px;
-      background: #f7f9fa;
+      background: #f8f8f8;
       border-right: 1px solid #ddd;
+      box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
       display: flex;
       flex-direction: column;
       transition: width 0.3s ease;
@@ -107,13 +109,18 @@
     }
     .logo-icon {
       font-size: 1.5rem;
-      color: #8492a6;
+      color: #D51D2C;
     }
     .sidebar-title {
       font-weight: bold;
       margin-left: 0.5rem;
       color: #333;
     }
+    .menu-toggle > i:first-child {
+  /* ajoutez ceci */
+  margin-right: 1rem;
+  color: #D51D2C;
+}
 
     /* MASQUE TOUT CE QUI DÉPASSE QUAND ON COLLAPSE */
     .sidebar.collapsed .sidebar-title,
@@ -127,6 +134,7 @@
       flex: 1;
       padding-top: 1rem;
     }
+    
     .menu-group {
       padding: 0 1rem;
     }
@@ -136,26 +144,39 @@
       border: none;
       display: flex;
       align-items: center;
-      padding: 0.75rem 0;
+      padding: 0.75rem 1rem;
       font-size: 1rem;
       color: #333;
       cursor: pointer;
       justify-content: space-between;
     }
+    .menu-toggle:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
     .menu-toggle .toggle-icon {
       margin-left: auto;
     }
+    .menu-toggle .hover {
+    background: rgba(0, 0, 0, 0.05);
+    }
+    
     .submenu {
       display: none;
       padding-left: 1.5rem;
     }
     .submenu a {
-      display: block;
-      padding: 0.5rem 0;
-      font-size: 0.95rem;
-      color: #333;
-      text-decoration: none;
-    }
+  display: block;
+  /* passez de `padding: 0.5rem 0;` à : */
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: #333;
+  text-decoration: none;
+}
+
+.submenu a:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
     .menu-link {
       display: flex;
       align-items: center;
