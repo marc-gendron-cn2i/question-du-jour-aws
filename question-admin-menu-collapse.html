@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Créer / Mettre à jour une question</title>
+  <link href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@400;700&display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Red Hat Display', sans-serif;
+      background: #f8f8f8;
+    }
+    h1 {
+      color: #d51D2C;
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+    .inline-inputs {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .inline-inputs > div {
+      flex: 1;
+    }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    #optionsContainer .option-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+    .drag-handle {
+      cursor: grab;
+      font-size: 1.2rem;
+      color: #888;
+    }
+    .option-row input {
+      flex: 1;
+    }
+    .remove-option {
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: #d51D2C;
+      cursor: pointer;
+    }
+    button {
+      margin-top: 1.5rem;
+      background: #d51D2C;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #c21a26;
+    }
+    .message {
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    /* LAYOUT GÉNÉRAL */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      width: 250px;
+      background: #f7f9fa;
+      border-right: 1px solid #ddd;
+      display: flex;
+      flex-direction: column;
+      transition: width 0.3s ease;
+      position: relative; /* pour position:absolute du bouton */
+    }
+    .sidebar.collapsed {
+      width: 60px;
+    }
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+    }
+    .logo-icon {
+      font-size: 1.5rem;
+      color: #8492a6;
+    }
+    .sidebar-title {
+      font-weight: bold;
+      margin-left: 0.5rem;
+      color: #333;
+    }
+
+    /* MASQUE TOUT CE QUI DÉPASSE QUAND ON COLLAPSE */
+    .sidebar.collapsed .sidebar-title,
+    .sidebar.collapsed .label,
+    .sidebar.collapsed .submenu,
+    .sidebar.collapsed .toggle-icon {
+      display: none !important;
+    }
+
+    .menu-section {
+      flex: 1;
+      padding-top: 1rem;
+    }
+    .menu-group {
+      padding: 0 1rem;
+    }
+    .menu-toggle {
+      width: 100%;
+      background: none;
+      border: none;
+      display: flex;
+      align-items: center;
+      padding: 0.75rem 0;
+      font-size: 1rem;
+      color: #333;
+      cursor: pointer;
+      justify-content: space-between;
+    }
+    .menu-toggle .toggle-icon {
+      margin-left: auto;
+    }
+    .submenu {
+      display: none;
+      padding-left: 1.5rem;
+    }
+    .submenu a {
+      display: block;
+      padding: 0.5rem 0;
+      font-size: 0.95rem;
+      color: #333;
+      text-decoration: none;
+    }
+    .menu-link {
+      display: flex;
+      align-items: center;
+      color: #333;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .menu-link.active {
+      background: #fff;
+      font-weight: 700;
+      color: #d51D2C;
+      border-left: 4px solid #d51D2C;
+    }
+    .menu-link i {
+      margin-right: 0.75rem;
+      color: #c21a26;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* BOUTON TOGGLE SIDEBAR */
+    .sidebar-toggle-btn {
+      background: transparent;
+      border: 1px solid #ccd3d8;
+      border-radius: 50%;
+      width: 36px;
+      height: 36px;
+      /* positionné toujours visible */
+      position: absolute;
+      bottom: 1rem;
+      right: -18px; /* pour qu’il dépasse de la sidebar */
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* CONTENU PRINCIPAL */
+    .content {
+      flex: 1;
+      padding: 2rem;
+      display: flex;
+      justify-content: center;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <i class="fa-solid fa-star-of-life logo-icon"></i>
+        <span class="sidebar-title">Compositeur</span>
+      </div>
+      <div class="menu-section">
+        <div class="menu-group">
+          <button class="menu-toggle">
+            <i class="fa-solid fa-square-poll-horizontal"></i>
+            <span class="label">La question du jour</span>
+            <i class="fa-solid fa-chevron-down toggle-icon"></i>
+          </button>
+          <div class="submenu">
+            <a href="#">Résultats</a>
+            <a href="#">Classement des répondants</a>
+          </div>
+        </div>
+      </div>
+      <button id="sidebarToggle" class="sidebar-toggle-btn">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+    </aside>
+
+    <main class="content">
+      <div class="container">
+        <h1>Créer / Mettre à jour une question</h1>
+        <form id="pollForm">
+          <!-- ... ton formulaire ... -->
+        </form>
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+  <script>
+    // ... ton code de sondage, création des options, fetch, etc. ...
+
+    // Toggle sidebar + fermeture de tous les sous-menus
+    const sidebar   = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('sidebarToggle');
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      // change l'icône
+      const ic = toggleBtn.querySelector('i');
+      ic.classList.toggle('fa-chevron-right');
+      ic.classList.toggle('fa-chevron-left');
+      // referme tout sous-menu au collapse
+      if (sidebar.classList.contains('collapsed')) {
+        document.querySelectorAll('.submenu')
+                .forEach(sub => sub.style.display = 'none');
+      }
+    });
+
+    // Toggle de chaque sous-menu
+    document.querySelectorAll('.menu-toggle').forEach(button => {
+      button.addEventListener('click', () => {
+        const sub = button.nextElementSibling;
+        sub.style.display = sub.style.display === 'block' ? 'none' : 'block';
+        const ic = button.querySelector('.toggle-icon');
+        ic.classList.toggle('fa-chevron-up');
+        ic.classList.toggle('fa-chevron-down');
+      });
+    });
+  </script>
+</body>
+</html>
