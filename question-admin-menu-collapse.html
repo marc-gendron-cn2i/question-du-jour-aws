@@ -261,6 +261,18 @@
   flex: 1;
   text-align: left;
 }
+/* Le header devient lien cliquable */
+.sidebar-header {
+  text-decoration: none;    /* pas de soulignement */
+  color: inherit;           /* hérite la couleur du texte */
+  cursor: pointer;          /* pointeur main */
+}
+
+/* Optionnel : même hover que pour le menu-toggle */
+.sidebar-header:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
 
 </style>
 
@@ -269,10 +281,11 @@
 <body>
   <div class="layout">
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <i class="fa-solid fa-star-of-life logo-icon"></i>
-        <span class="sidebar-title">Outils numériques</span>
-      </div>
+     <a href="/menu-outils.html" class="sidebar-header">
+  <i class="fa-solid fa-star-of-life logo-icon"></i>
+  <span class="sidebar-title">Outils numériques</span>
+</a>
+
       <div class="menu-section">
         <div class="menu-group">
           <button class="menu-toggle">
