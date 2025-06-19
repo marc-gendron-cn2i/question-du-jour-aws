@@ -1,4 +1,4 @@
-// poll.js (mise à jour : masquer complètement le bloc si aucune question n'est disponible)
+// poll.js (mise à jour : masquer complètement le bloc uniquement si aucune question (404) disponible)
 
 const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
 const FETCH_OPTS = { headers: { 'Content-Type': 'application/json' } };
@@ -19,7 +19,7 @@ function getArcIdUUID() {
 
 async function fetchPoll(id) {
   const res = await fetch(`${API_BASE}/poll/${id}`, { method: 'GET', ...FETCH_OPTS });
-  if (!res.ok) throw new Error(res.status);
+  if (!res.ok) throw new Error(res.status.toString());
   return res.json();
 }
 
@@ -89,9 +89,16 @@ async function renderPoll() {
       fetchPoll(pollId),
       voteKey ? hasVoted(voteKey) : Promise.resolve(false)
     ]);
-  } catch {
-    // si pas de question dispo, masquer tout le widget
-    container.classList.add('hidden');
+  } catch (err) {
+    // masquer seulement si code 404 (aucune question)
+    if (err.message === '404') {
+      container.classList.add('hidden');
+      return;
+    }
+    console.error('Erreur inattendue :', err);
+    // afficher un message générique
+    qEl.textContent = 'Une erreur est survenue.';
+    qEl.classList.remove('hidden');
     return;
   }
 
@@ -99,13 +106,7 @@ async function renderPoll() {
   const start = new Date(data.startDateTime);
   const end   = new Date(data.endDateTime);
 
-  if (data.site !== CURRENT_SITE) {
-    // masquer si pas destiné à ce site
-    container.classList.add('hidden');
-    return;
-  }
-  else if (now < start || now >= end) {
-    // masquer si hors période de diffusion
+  if (data.site !== CURRENT_SITE || now < start || now >= end) {
     container.classList.add('hidden');
     return;
   }
