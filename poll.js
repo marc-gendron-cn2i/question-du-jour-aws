@@ -1,5 +1,6 @@
 // poll.js
 
+const CACHE_VERSION = 'v2';  // incrémentez à chaque modif
 const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
 const FETCH_OPTS = { headers: { 'Content-Type': 'application/json' } };
 const fusion = window.Fusion || {};
@@ -43,7 +44,7 @@ async function sendVote(pollId, arcId, option) {
 }
 
 async function getCachedPollData(id) {
-  const key = `pollData_${id}`;
+  const key = `pollData_${CACHE_VERSION}_${id}`;
   const raw = sessionStorage.getItem(key);
   if (raw) {
     try {
