@@ -1,4 +1,4 @@
-// poll.js (mise à jour pour masquer les options dès le message de remerciement et afficher les résultats mis à jour sans rechargement)
+// poll.js (mise à jour pour masquer les options dès le message de remerciement, afficher les résultats mis à jour sans rechargement et gérer l’absence de sondage)
 
 const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
 const FETCH_OPTS = { headers: { 'Content-Type': 'application/json' } };
@@ -72,7 +72,7 @@ async function renderPoll() {
   const bEl = document.getElementById('submit-poll');
   const aEl = document.getElementById('poll-alert');
 
-  // reset
+  // reset elements
   [qEl, oEl, aEl, document.getElementById('poll-results')].forEach(el => {
     el.textContent = '';
     el.innerHTML = '';
@@ -89,8 +89,12 @@ async function renderPoll() {
       fetchPoll(pollId),
       voteKey ? hasVoted(voteKey) : Promise.resolve(false)
     ]);
-  } catch {
-    container.classList.add('hidden');
+  } catch (err) {
+    console.error('Erreur lors de la récupération du sondage ou du statut de vote :', err);
+    qEl.textContent = 'Aucune question disponible pour aujourd’hui.';
+    qEl.classList.remove('hidden');
+    // reveal container if it was hidden
+    container.style.opacity = '1';
     return;
   }
 
@@ -168,7 +172,7 @@ async function renderPoll() {
       try {
         await sendVote(pollId, userArc, optIndex);
         // message de remerciement
-        aEl.textContent = 'Merci pour votre vote !';
+        aEl.textContent = 'Merci pour votre vote !';
         aEl.classList.remove('hidden');
         aEl.classList.add('visible');
         // masquer les options et le bouton immédiatement
