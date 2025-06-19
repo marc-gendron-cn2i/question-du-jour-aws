@@ -1,4 +1,4 @@
-// poll.js (mise à jour pour masquer les options dès le message de remerciement, afficher les résultats mis à jour sans rechargement et gérer l’absence de sondage)
+// poll.js (mise Ã  jour : masquer complÃ¨tement le bloc uniquement si aucune question (404) disponible)
 
 const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
 const FETCH_OPTS = { headers: { 'Content-Type': 'application/json' } };
@@ -19,7 +19,7 @@ function getArcIdUUID() {
 
 async function fetchPoll(id) {
   const res = await fetch(`${API_BASE}/poll/${id}`, { method: 'GET', ...FETCH_OPTS });
-  if (!res.ok) throw new Error(res.status);
+  if (!res.ok) throw new Error(res.status.toString());
   return res.json();
 }
 
@@ -37,7 +37,7 @@ async function sendVote(pollId, arcId, option) {
   });
   if (!res.ok) {
     const msg = await res.text();
-    throw new Error(`${res.status} — ${msg}`);
+    throw new Error(`${res.status} â€” ${msg}`);
   }
   return res.json();
 }
@@ -57,7 +57,7 @@ function showResults(data) {
         </div>
       </div>`;
   }).join('') + `<div class="poll-result-total">
-    ${total} répondant${total > 1 ? 's' : ''}
+    ${total} rÃ©pondant${total > 1 ? 's' : ''}
   </div>`;
 
   rEl.innerHTML = html;
@@ -72,7 +72,7 @@ async function renderPoll() {
   const bEl = document.getElementById('submit-poll');
   const aEl = document.getElementById('poll-alert');
 
-  // reset elements
+  // reset des Ã©lÃ©ments
   [qEl, oEl, aEl, document.getElementById('poll-results')].forEach(el => {
     el.textContent = '';
     el.innerHTML = '';
@@ -90,11 +90,15 @@ async function renderPoll() {
       voteKey ? hasVoted(voteKey) : Promise.resolve(false)
     ]);
   } catch (err) {
-    console.error('Erreur lors de la récupération du sondage ou du statut de vote :', err);
-    qEl.textContent = 'Aucune question disponible pour aujourd’hui.';
+    // masquer seulement si code 404 (aucune question)
+    if (err.message === '404') {
+      container.classList.add('hidden');
+      return;
+    }
+    console.error('Erreur inattendue :', err);
+    // afficher un message gÃ©nÃ©rique
+    qEl.textContent = 'Une erreur est survenue.';
     qEl.classList.remove('hidden');
-    // reveal container if it was hidden
-    container.style.opacity = '1';
     return;
   }
 
@@ -102,99 +106,80 @@ async function renderPoll() {
   const start = new Date(data.startDateTime);
   const end   = new Date(data.endDateTime);
 
-  if (data.site !== CURRENT_SITE) {
-    qEl.textContent = 'Aucune question pour ce site.';
-    qEl.classList.remove('hidden');
+  if (data.site !== CURRENT_SITE || now < start || now >= end) {
+    container.classList.add('hidden');
+    return;
   }
-  else if (now < start) {
-    qEl.textContent = 'Trop tôt. Débute à : ' + start.toLocaleString('fr-FR');
-    qEl.classList.remove('hidden');
-  }
-  else if (now >= end) {
-    qEl.textContent = 'Trop tard. Fin à : ' + end.toLocaleString('fr-FR');
-    qEl.classList.remove('hidden');
-  }
-  else {
-    qEl.textContent = data.question;
-    qEl.classList.remove('hidden');
 
-    if (arcId && alreadyVoted) {
-      try {
-        const fresh = await fetchPoll(pollId);
-        showResults(fresh);
-      } catch {
-        showResults(data);
-      }
+  // afficher question
+  qEl.textContent = data.question;
+  qEl.classList.remove('hidden');
+
+  if (arcId && alreadyVoted) {
+    const fresh = await fetchPoll(pollId).catch(() => data);
+    showResults(fresh);
+    return;
+  }
+
+  // formulaire de vote
+  oEl.innerHTML = data.options.map((opt, i) => `
+    <label style="display:block;margin-bottom:8px;">
+      <input type="radio" name="poll-choice" value="${i}" style="margin-right:8px;">
+      ${opt}
+    </label>`).join('');
+  oEl.classList.remove('hidden');
+  bEl.classList.remove('hidden');
+
+  bEl.addEventListener('click', async () => {
+    const userArc = getArcIdUUID();
+    if (!userArc) {
+      oEl.classList.add('hidden');
+      bEl.classList.add('hidden');
+      aEl.innerHTML = `
+        <div>Vous devez Ãªtre connectÃ© pour rÃ©pondre.</div>
+        <button onclick="location.href='/connexion'">Me connecter</button>`;
+      aEl.classList.remove('hidden');
+      aEl.classList.add('visible');
       return;
     }
 
-    // afficher le formulaire de vote
-    oEl.innerHTML = data.options.map((opt, i) => `
-      <label style="display:block;margin-bottom:8px;">
-        <input type="radio" name="poll-choice" value="${i}" style="margin-right:8px;">
-        ${opt}
-      </label>`).join('');
-    oEl.classList.remove('hidden');
-    bEl.classList.remove('hidden');
+    if (await hasVoted(`${userArc}_${pollId}`)) {
+      const fresh2 = await fetchPoll(pollId).catch(() => data);
+      showResults(fresh2);
+      return;
+    }
 
-    bEl.addEventListener('click', async () => {
-      const userArc = getArcIdUUID();
-      if (!userArc) {
-        oEl.classList.add('hidden');
-        bEl.classList.add('hidden');
-        aEl.innerHTML = `
-          <div>Vous devez être connecté pour répondre.</div>
-          <button onclick="location.href='/connexion'">Me connecter</button>`;
-        aEl.classList.remove('hidden');
-        aEl.classList.add('visible');
-        return;
-      }
+    const sel = document.querySelector('input[name="poll-choice"]:checked');
+    if (!sel) {
+      aEl.textContent = 'Veuillez choisir une option.';
+      aEl.classList.remove('hidden');
+      aEl.classList.add('visible');
+      return;
+    }
 
-      if (await hasVoted(`${userArc}_${pollId}`)) {
-        try {
-          const fresh2 = await fetchPoll(pollId);
-          showResults(fresh2);
-        } catch {
-          showResults(data);
-        }
-        return;
-      }
-
-      const sel = document.querySelector('input[name="poll-choice"]:checked');
-      if (!sel) {
-        aEl.textContent = 'Veuillez choisir une option.';
-        aEl.classList.remove('hidden');
-        aEl.classList.add('visible');
-        return;
-      }
-
-      const optIndex = parseInt(sel.value, 10);
-      try {
-        await sendVote(pollId, userArc, optIndex);
-        // message de remerciement
-        aEl.textContent = 'Merci pour votre vote !';
-        aEl.classList.remove('hidden');
-        aEl.classList.add('visible');
-        // masquer les options et le bouton immédiatement
-        oEl.classList.add('hidden');
-        bEl.classList.add('hidden');
-        // récupérer et afficher les résultats à jour
-        const fresh = await fetchPoll(pollId);
-        setTimeout(() => {
-          aEl.classList.remove('visible');
-          aEl.classList.add('hidden');
-          showResults(fresh);
-        }, 1000);
-      } catch (e) {
-        aEl.textContent = `Erreur lors de l'envoi (${e.message})`;
-        aEl.classList.remove('hidden');
-        aEl.classList.add('visible');
-      }
-    }, { once: true });
-  }
+    const optIndex = parseInt(sel.value, 10);
+    try {
+      await sendVote(pollId, userArc, optIndex);
+      aEl.textContent = 'Merci pour votre vote !';
+      aEl.classList.remove('hidden');
+      aEl.classList.add('visible');
+      oEl.classList.add('hidden');
+      bEl.classList.add('hidden');
+      const fresh = await fetchPoll(pollId).catch(() => data);
+      setTimeout(() => {
+        aEl.classList.remove('visible');
+        aEl.classList.add('hidden');
+        showResults(fresh);
+      }, 1000);
+    } catch (e) {
+      aEl.textContent = `Erreur lors de l'envoi (${e.message})`;
+      aEl.classList.remove('hidden');
+      aEl.classList.add('visible');
+    }
+  }, { once: true });
 }
 
-// initialisation + lock hauteur + fade-in
+// initialisation + verrouiller la hauteur + fade-in
 renderPoll().then(() => {
   const container = document.querySelector('.poll-container');
   container.style.minHeight = container.offsetHeight + 'px';
