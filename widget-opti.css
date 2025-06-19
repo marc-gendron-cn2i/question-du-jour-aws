@@ -1,0 +1,139 @@
+/* poll.css */
+body {
+  font-family: 'Red Hat Display', sans-serif;
+  background: #f8f8f8;
+  margin: 0;
+  padding: 0;
+}
+
+.poll-container {
+  position: relative;
+  border: 2px solid #d51D2C;
+  max-width: 600px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #fff;
+  overflow: hidden;
+}
+
+.poll-header {
+  font-weight: bold;
+  color: #d51D2C;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  margin-bottom: 1rem;
+}
+
+.poll-header svg {
+  margin-right: 0.5rem;
+  width: 20px;
+  height: 20px;
+  fill: #d51D2C;
+}
+
+#poll-question {
+  font-weight: 700;
+  font-size: 20px;
+  margin-bottom: 1rem;
+  color: #000;
+}
+
+#poll-options {
+  transition: opacity 0.5s ease;
+}
+
+#submit-poll {
+  background: #d51D2C;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: opacity 0.5s ease;
+}
+
+#poll-results {
+  opacity: 0;
+  margin-top: 1rem;
+  transition: opacity 0.5s ease;
+}
+#poll-results.visible {
+  opacity: 1;
+}
+
+.poll-result-bar {
+  background: #eee;
+  border-radius: 4px;
+  height: 6px;
+  overflow: hidden;
+  margin: 4px 0 12px;
+}
+.poll-result-fill {
+  background: #d51D2C;
+  height: 6px;
+}
+.poll-result-total {
+  margin-top: 8px;
+  font-size: 14px;
+}
+
+#poll-alert {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+  text-align: center;
+  margin-top: 1rem;
+  color: #000;
+  font-weight: 600;
+}
+#poll-alert.visible {
+  opacity: 1;
+}
+#poll-alert button {
+  margin-top: 1rem;
+  background: #d51D2C;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  font-size: 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.about {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 12px;
+  color: #000;
+  cursor: help;
+  z-index: 1000;
+  line-height: 1.2;
+}
+.about::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: #fff;
+  color: #000;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  white-space: normal;
+  max-width: 200px;
+  word-wrap: break-word;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+  z-index: 1001;
+}
+.about:hover::after,
+.about:focus::after,
+.about.show-tooltip::after {
+  opacity: 1;
+  visibility: visible;
+}
