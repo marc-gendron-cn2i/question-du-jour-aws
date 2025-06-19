@@ -1,42 +1,47 @@
-<!-- index.html -->
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-  <meta charset="UTF-8" />
-  <title>Widget de sondage</title>
-  <!-- CSS critique inline -->
-  <style>
-    .poll-container { opacity: 0; transition: opacity 0.3s ease; }
-    .hidden { display: none !important; }
-  </style>
-  <!-- CSS complet chargé de façon asynchrone -->
-  <link rel="stylesheet" href="/static/css/poll.css" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="/static/css/poll.css">
-  </noscript>
-</head>
-<body>
-  <div class="poll-container">
-    <div class="poll-header">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-        <path d="M4 21h2V10H4v11zm7 0h2V3h-2v18zm7 0h2v-6h-2v6z"/>
-      </svg>
-      La question du jour
-    </div>
-    <div id="poll-question">Chargement…</div>
-    <div id="poll-options"></div>
-    <button id="submit-poll" class="hidden">Soumettre</button>
-    <div id="poll-results" class="hidden"></div>
-    <div id="poll-alert" class="hidden"></div>
-    <div class="about" tabindex="0"
-         data-tooltip="Seuls les utilisateurs connectés peuvent voter, une seule réponse par question est permise. Résultats non scientifiques, à valeur informative seulement.">
-      À propos de la question du jour
-    </div>
-  </div>
+<!-- CSS critique inline pour un rendu rapide -->
+<style>
+  .poll-container { opacity: 0; transition: opacity 0.3s ease; }
+  .hidden { display: none !important; }
+</style>
 
-  <!-- JS du widget en module, différé et caché derrière le cache HTTP -->
-  <script type="module" src="/static/js/poll.js" defer></script>
-  <!-- Tooltip en script séparé, chargé async -->
-  <script src="/static/js/tooltip.js" async></script>
-</body>
-</html>
+<!-- CSS full async depuis CloudFront -->
+<link
+  rel="stylesheet"
+  href="https://d2l6vifaon5iwc.cloudfront.net/poll-widget/poll.css"
+  media="print"
+  onload="this.media='all'">
+<noscript>
+  <link
+    rel="stylesheet"
+    href="https://d2l6vifaon5iwc.cloudfront.net/poll-widget/poll.css">
+</noscript>
+
+<!-- Markup du widget -->
+<div class="poll-container">
+  <div class="poll-header">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+      <path d="M4 21h2V10H4v11zm7 0h2V3h-2v18zm7 0h2v-6h-2v6z"/>
+    </svg>
+    La question du jour
+  </div>
+  <div id="poll-question">Chargement…</div>
+  <div id="poll-options"></div>
+  <button id="submit-poll" class="hidden">Soumettre</button>
+  <div id="poll-results" class="hidden"></div>
+  <div id="poll-alert" class="hidden"></div>
+  <div class="about" tabindex="0"
+       data-tooltip="Seuls les utilisateurs connectés peuvent voter, une seule réponse par question est permise. Résultats non scientifiques, à valeur informative seulement.">
+    À propos de la question du jour
+  </div>
+</div>
+
+<!-- JS widget + tooltip depuis CloudFront -->
+<script
+  type="module"
+  src="https://d2l6vifaon5iwc.cloudfront.net/poll-widget/poll.js"
+  defer>
+</script>
+<script
+  src="https://d2l6vifaon5iwc.cloudfront.net/poll-widget/tooltip.js"
+  async>
+</script>
