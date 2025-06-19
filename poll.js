@@ -177,12 +177,23 @@ async function renderPoll() {
 
         const optIndex = parseInt(sel.value, 10);
         try {
-          await sendVote(pollId, userArc, optIndex);
+          +          await sendVote(pollId, userArc, optIndex);
           // Mettre à jour le cache local
           data.votes[optIndex] = (data.votes[optIndex] || 0) + 1;
-          oEl.classList.add('hidden');
-          bEl.classList.add('hidden');
-          showResults(data);
+
+          // Afficher un message de remerciement
+          aEl.textContent = 'Merci pour votre vote !';
+          aEl.classList.remove('hidden');
+          aEl.classList.add('visible');
+
+          // Après un court délai, masquer le message et afficher les résultats
+          setTimeout(() => {
+            aEl.classList.remove('visible');
+            aEl.classList.add('hidden');
+            oEl.classList.add('hidden');
+            bEl.classList.add('hidden');
+            showResults(data);
+          }, 1000);
         } catch (e) {
           aEl.textContent = `Erreur lors de l'envoi (${e.message})`;
           aEl.classList.remove('hidden');
