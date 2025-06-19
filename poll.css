@@ -81,16 +81,25 @@ body {
 }
 
 #poll-alert {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  /* Déplace le point de référence du centre du message */
+  transform: translate(-50%, -50%);
+  /* Si besoin, limiter la largeur */
+  width: calc(100% - 2rem);
+  text-align: center;
+  
   opacity: 0;
   transition: opacity 0.5s ease;
-  text-align: center;
-  margin-top: 1rem;
-  color: #000;
-  font-weight: 600;
+  /* on enlève margin-top */
 }
+
+/* Quand on l’affiche */
 #poll-alert.visible {
   opacity: 1;
 }
+
 #poll-alert button {
   margin-top: 1rem;
   background: #d51D2C;
