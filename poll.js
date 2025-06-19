@@ -1,4 +1,4 @@
-// poll.js (sans sessionStorage)
+// poll.js (mise à jour pour masquer les options dès le message de remerciement et afficher les résultats mis à jour sans rechargement)
 
 const API_BASE = "https://hx9jzqon0l.execute-api.us-east-1.amazonaws.com/prod";
 const FETCH_OPTS = { headers: { 'Content-Type': 'application/json' } };
@@ -71,10 +71,9 @@ async function renderPoll() {
   const oEl = document.getElementById('poll-options');
   const bEl = document.getElementById('submit-poll');
   const aEl = document.getElementById('poll-alert');
-  const rEl = document.getElementById('poll-results');
 
   // reset
-  [qEl, oEl, rEl, aEl].forEach(el => {
+  [qEl, oEl, aEl, document.getElementById('poll-results')].forEach(el => {
     el.textContent = '';
     el.innerHTML = '';
     el.classList.add('hidden');
@@ -84,7 +83,6 @@ async function renderPoll() {
   const arcId = getArcIdUUID();
   const voteKey = arcId ? `${arcId}_${pollId}` : null;
 
-  // on récupère toujours frais
   let data, alreadyVoted;
   try {
     [ data, alreadyVoted ] = await Promise.all([
@@ -116,7 +114,6 @@ async function renderPoll() {
     qEl.textContent = data.question;
     qEl.classList.remove('hidden');
 
-    // si déjà voté, on refetch les résultats et on affiche
     if (arcId && alreadyVoted) {
       try {
         const fresh = await fetchPoll(pollId);
@@ -127,7 +124,7 @@ async function renderPoll() {
       return;
     }
 
-    // sinon on affiche le formulaire de vote
+    // afficher le formulaire de vote
     oEl.innerHTML = data.options.map((opt, i) => `
       <label style="display:block;margin-bottom:8px;">
         <input type="radio" name="poll-choice" value="${i}" style="margin-right:8px;">
@@ -150,7 +147,6 @@ async function renderPoll() {
       }
 
       if (await hasVoted(`${userArc}_${pollId}`)) {
-        // double-check
         try {
           const fresh2 = await fetchPoll(pollId);
           showResults(fresh2);
@@ -175,12 +171,15 @@ async function renderPoll() {
         aEl.textContent = 'Merci pour votre vote !';
         aEl.classList.remove('hidden');
         aEl.classList.add('visible');
+        // masquer les options et le bouton immédiatement
+        oEl.classList.add('hidden');
+        bEl.classList.add('hidden');
+        // récupérer et afficher les résultats à jour
+        const fresh = await fetchPoll(pollId);
         setTimeout(() => {
           aEl.classList.remove('visible');
           aEl.classList.add('hidden');
-          oEl.classList.add('hidden');
-          bEl.classList.add('hidden');
-          showResults(data);
+          showResults(fresh);
         }, 1000);
       } catch (e) {
         aEl.textContent = `Erreur lors de l'envoi (${e.message})`;
